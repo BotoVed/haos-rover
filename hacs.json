@@ -1,0 +1,10 @@
+{
+  "name": "Rover",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["rover"],
+  "country": "ru",
+  "homeassistant": "2026.1.0",
+  "iot_class": "local_push",
+  "filename": "custom_components/rover/manifest.json"
+}
