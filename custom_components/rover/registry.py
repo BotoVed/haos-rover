@@ -345,6 +345,23 @@ class RoverRegistry:
         """Get all pending remotes."""
         return [p.copy() for p in self._data["pending"]]
 
+    async def deny_pending(self, identity_hash: str) -> bool:
+        """Remove a pending remote without approving it."""
+        for i, p in enumerate(self._data["pending"]):
+            if p["hash"] == identity_hash:
+                old_hash = self._data["_hash_u"]
+                self._data["pending"].pop(i)
+                self._recalc_hashes()
+                new_hash = self._data["_hash_u"]
+                _LOGGER.info(
+                    "MUTATION deny_pending hash=%s: u %s->%s",
+                    identity_hash[:8], old_hash, new_hash,
+                )
+                self._on_changed("u")
+                await self.async_save()
+                return True
+        return False
+
     # Users section
     async def approve_pending(self, identity_hash: str, role: str = ROLE_REGULAR) -> bool:
         """Approve a pending remote."""

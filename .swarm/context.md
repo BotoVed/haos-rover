@@ -49,24 +49,24 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 659 | 659 | 0 | 686ms |
-| bash | 428 | 428 | 0 | 681ms |
-| edit | 173 | 173 | 0 | 29ms |
-| glob | 140 | 140 | 0 | 513ms |
-| grep | 89 | 89 | 0 | 35ms |
-| task | 74 | 74 | 0 | 92479ms |
-| write | 62 | 62 | 0 | 22ms |
-| syntax_check | 39 | 39 | 0 | 55ms |
+| read | 737 | 737 | 0 | 632ms |
+| bash | 445 | 445 | 0 | 670ms |
+| edit | 199 | 199 | 0 | 28ms |
+| glob | 154 | 154 | 0 | 469ms |
+| grep | 105 | 105 | 0 | 34ms |
+| task | 81 | 81 | 0 | 95142ms |
+| write | 67 | 67 | 0 | 21ms |
+| syntax_check | 42 | 42 | 0 | 52ms |
 | search | 25 | 25 | 0 | 33ms |
+| declare_scope | 22 | 22 | 0 | 5ms |
 | update_task_status | 19 | 19 | 0 | 32ms |
-| declare_scope | 18 | 18 | 0 | 5ms |
-| retrieve_summary | 14 | 14 | 0 | 4ms |
+| retrieve_summary | 15 | 15 | 0 | 5ms |
+| summarize_work | 13 | 13 | 0 | 71ms |
 | todo_extract | 12 | 12 | 0 | 3ms |
 | swarm_command | 11 | 11 | 0 | 44ms |
+| test_runner | 11 | 11 | 0 | 776ms |
 | knowledge_add | 11 | 11 | 0 | 170ms |
-| summarize_work | 9 | 9 | 0 | 98ms |
-| diff | 8 | 8 | 0 | 35ms |
-| test_runner | 8 | 8 | 0 | 611ms |
+| diff | 10 | 10 | 0 | 31ms |
 | web_search | 7 | 7 | 0 | 3ms |
 | skill | 6 | 6 | 0 | 44ms |
 | get_approved_plan | 5 | 5 | 0 | 4ms |

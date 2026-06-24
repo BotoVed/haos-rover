@@ -1,0 +1,104 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Rover",
+        "description": "Rover will create a Reticulum identity and prepare the mesh transport. You can add devices and manage remotes in the integration options."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Rover instance is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rover Configuration",
+        "description": "Select a configuration section:",
+        "menu": {
+          "general": "General Settings",
+          "network": "Network Configuration",
+          "devices": "Add Devices",
+          "remove_device": "Remove Device",
+          "test_device": "Test Device",
+          "users": "Manage Users",
+          "pending": "Pending Remotes",
+          "config": "Configuration Export"
+        }
+      },
+      "general": {
+        "title": "General Settings",
+        "description": "Configure server name and ping interval.",
+        "data": {
+          "server_name": "Server Name",
+          "ping_interval": "Ping Interval (seconds)"
+        }
+      },
+      "network": {
+        "title": "Network Configuration",
+        "description": "Configure Reticulum network settings.",
+        "data": {
+          "tcp_port": "TCP Port",
+          "local_ip": "Local IP Address",
+          "ssid": "WiFi SSID"
+        }
+      },
+      "devices": {
+        "title": "Add Devices",
+        "description": "Select entities to add as Rover devices.",
+        "data": {
+          "entities": "Entities",
+          "type": "Device Type",
+          "name": "Display Name",
+          "area_id": "Area ID"
+        }
+      },
+      "remove_device": {
+        "title": "Remove Device",
+        "description": "Select a device to remove from Rover.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "test_device": {
+        "title": "Test Device",
+        "description": "Select a device to send a test command.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "test_action": {
+        "title": "Test Action",
+        "description": "Choose the test action for the selected device.",
+        "data": {
+          "service": "Service"
+        }
+      },
+      "users": {
+        "title": "Manage Users",
+        "description": "View connected users and revoke access.",
+        "data": {
+          "user_hash": "User"
+        }
+      },
+      "pending": {
+        "title": "Pending Remotes",
+        "description": "Approve or reject pending registration requests.",
+        "data": {
+          "pending_hash": "Remote",
+          "action": "Action"
+        }
+      },
+      "config": {
+        "title": "Configuration Export",
+        "description": "Scan QR code to register a new remote:\n\n{qr}\n\n**Identity:** `{identity}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`"
+      }
+    },
+    "abort": {
+      "not_loaded": "Integration not fully loaded. Try again shortly.",
+      "no_devices": "No devices registered yet.",
+      "no_users": "No users registered yet.",
+      "no_pending": "No pending registration requests."
+    }
+  }
+}
