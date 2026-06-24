@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Swarm runtime files (tooling, not project code)
+.swarm/
+
+# OpenCode tooling
+.opencode/
+
+# Build artifacts
+rover.zip
