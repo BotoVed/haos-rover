@@ -1,12 +1,11 @@
 """Config flow for Rover integration."""
 from __future__ import annotations
 
-from homeassistant import config_entries
-from homeassistant.helpers import config_validation as cv
-
-from .const import DOMAIN, DEFAULT_TCP_PORT
-
 import voluptuous as vol
+
+from homeassistant import config_entries
+
+from .const import DOMAIN
 
 
 STEP_USER_DATA_SCHEMA = vol.Schema({})
@@ -26,12 +25,6 @@ class RoverConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(
                 step_id="user",
                 data_schema=STEP_USER_DATA_SCHEMA,
-                description_placeholders={
-                    "title": "Rover",
-                    "description": "Rover will create a Reticulum identity and prepare "
-                                   "the mesh transport. You can add devices and manage "
-                                   "remotes in the integration options.",
-                },
             )
 
         return self.async_create_entry(title="Rover", data={})
