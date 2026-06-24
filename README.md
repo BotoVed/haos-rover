@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Rover — Remote Over Radio for Home Assistant
 
 **Version 0.0.2** — Core Protocol Foundations
@@ -217,3 +218,12 @@ MIT
 ## Disclaimer
 
 Rover is in early development (v0.0.2). The core protocol foundations, Reticulum transport, and message handler layers are complete. The config flow UI and bridge service are under active development. Expect breaking changes before v1.0.0.
+=======
+# HaOS-Rover
+
+Home Assistant OS Rover — [опишите проект здесь]
+
+## Статус
+
+Проект в начальной стадии.
+>>>>>>> e50fcc83bb6a9450762f5e02ae208c9a0932ef1e

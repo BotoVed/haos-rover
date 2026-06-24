@@ -23,6 +23,8 @@ def _install_ha_stubs() -> None:
     # homeassistant.core
     core = types.ModuleType("homeassistant.core")
     core.HomeAssistant = MagicMock
+    core.Event = MagicMock  # used by ha_bridge.py
+    core.ServiceCall = MagicMock  # used by services.py
     sys.modules["homeassistant.core"] = core
 
     # homeassistant.helpers
@@ -51,6 +53,16 @@ def _install_ha_stubs() -> None:
     typing_mod = types.ModuleType("homeassistant.helpers.typing")
     typing_mod.ConfigType = dict
     sys.modules["homeassistant.helpers.typing"] = typing_mod
+
+    # homeassistant.const (needed by __init__.py and services.py)
+    const_mod = types.ModuleType("homeassistant.const")
+    const_mod.EVENT_HOMEASSISTANT_STOP = "homeassistant_stop"
+    sys.modules["homeassistant.const"] = const_mod
+
+    # homeassistant.helpers.service (needed by handlers.py)
+    svc_mod = types.ModuleType("homeassistant.helpers.service")
+    svc_mod.ServiceTarget = MagicMock
+    sys.modules["homeassistant.helpers.service"] = svc_mod
 
     # homeassistant.helpers.config_validation
     cv_mod = types.ModuleType("homeassistant.helpers.config_validation")

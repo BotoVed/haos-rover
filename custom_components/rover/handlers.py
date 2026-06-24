@@ -39,7 +39,7 @@ class RoverHandlers:
         self._transport = transport
         self._dispatcher = dispatcher
 
-    def register(self) -> None:
+    async def register(self) -> None:
         """Register handlers with dispatcher."""
         self._dispatcher.register_handler(TP_CMD, self._handle_cmd)
         self._dispatcher.register_handler(TP_PING_PONG, self._handle_ping)

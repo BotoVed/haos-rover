@@ -1,0 +1,63 @@
+set_loglevel:
+  name: Set log level
+  description: Set Rover logger levels temporarily
+  fields:
+    level:
+      required: true
+      selector:
+        select:
+          options: ["debug", "info", "warning", "error"]
+    duration_minutes:
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 1440
+
+send_test_message:
+  name: Send test message
+  description: Send a test Rover protocol message
+  fields:
+    destination_hash:
+      required: true
+      example: "self"
+      selector:
+        text:
+    tp:
+      required: true
+      selector:
+        number:
+          min: 2
+          max: 9
+    payload:
+      default: {}
+      selector:
+        object:
+
+simulate_inbound:
+  name: Simulate inbound message
+  description: Simulate an incoming Rover protocol message
+  fields:
+    source_hash:
+      required: true
+      example: "aabbccdd..."
+      selector:
+        text:
+    tp:
+      required: true
+      selector:
+        number:
+          min: 2
+          max: 9
+    payload:
+      default: {}
+      selector:
+        object:
+    authorized:
+      default: false
+      selector:
+        boolean:
+
+dump_registry:
+  name: Dump registry
+  description: Log the full registry state

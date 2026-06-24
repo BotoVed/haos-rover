@@ -3,20 +3,33 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
+<<<<<<< HEAD
 *.egg
 
 # Environment
 .env
 .env.*
+=======
+build/
+*.egg
+.venv/
+venv/
+>>>>>>> e50fcc83bb6a9450762f5e02ae208c9a0932ef1e
 
 # IDE
 .vscode/
 .idea/
+<<<<<<< HEAD
+=======
+*.swp
+*.swo
+>>>>>>> e50fcc83bb6a9450762f5e02ae208c9a0932ef1e
 
 # OS
 .DS_Store
 Thumbs.db
 
+<<<<<<< HEAD
 # Swarm runtime files (tooling, not project code)
 .swarm/
 
@@ -25,3 +38,11 @@ Thumbs.db
 
 # Build artifacts
 rover.zip
+=======
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+>>>>>>> e50fcc83bb6a9450762f5e02ae208c9a0932ef1e
