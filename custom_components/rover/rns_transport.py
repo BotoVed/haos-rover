@@ -85,55 +85,76 @@ class RoverTransport:
         self._shutdown = False
 
     async def async_start(self) -> str:
-        loop = asyncio.get_event_loop()
-        
-        # Create config dir if not exists
-        os.makedirs(self._config_dir, exist_ok=True)
-        
-        # Load/create identity
-        identity_path = os.path.join(self._config_dir, "identity")
-        if os.path.exists(identity_path):
-            self._identity = RNS.Identity.from_file(identity_path)
-        else:
-            self._identity = RNS.Identity()
-            self._identity.to_file(identity_path)
-        
-        # Write RNS config file with TCPServerInterface
-        config_path = os.path.join(self._config_dir, "reticulum.json")
-        with open(config_path, "w") as f:
-            f.write(f'{{"interfaces": [{{"type": "TCPServerInterface", "port": {self._tcp_port}}}]}}')
-        
-        # Initialize RNS
-        RNS.Reticulum(configdir=self._config_dir)
-        RNS.loglevel = RNS.LOG_EXTREME
-        RNS.logdest = RNS.LOG_STDOUT
-        
-        # Create LXMF router
-        storage_path = os.path.join(self._config_dir, "lxmf_storage")
-        self._router = LXMF.LXMRouter(identity=self._identity, storagepath=storage_path)
-        
-        # Register delivery identity
-        self._delivery_dest = self._router.register_delivery_identity(
-            self._identity, "Rover", None
-        )
-        self._delivery_dest.announce()
-        
-        # Register callback
-        self._router.register_delivery_callback(self._on_lxmf_message)
-        
-        # Schedule periodic path announces
+        """Initialize RNS/LXMF transport in executor thread."""
+
+        def _init() -> str:
+            # Create config dir
+            os.makedirs(self._config_dir, exist_ok=True)
+
+            # Load/create identity
+            identity_path = os.path.join(self._config_dir, "identity")
+            if os.path.exists(identity_path):
+                self._identity = RNS.Identity.from_file(identity_path)
+            else:
+                self._identity = RNS.Identity()
+                self._identity.to_file(identity_path)
+
+            # Write RNS config
+            config_path = os.path.join(self._config_dir, "reticulum.json")
+            with open(config_path, "w") as f:
+                f.write(
+                    '{\n  "interfaces": [\n'
+                    '    {\n'
+                    f'      "type": "TCPServerInterface",\n'
+                f'      "port": {self._tcp_port},\n'
+                f'      "enabled": true\n'
+                '    }\n'
+                '  ]\n'
+                '}}'
+                )
+
+            # Initialize RNS
+            RNS.Reticulum(configdir=self._config_dir)
+            RNS.loglevel = RNS.LOG_EXTREME
+            RNS.logdest = RNS.LOG_STDOUT
+
+            # Create LXMF router
+            storage_path = os.path.join(self._config_dir, "lxmf_storage")
+            os.makedirs(storage_path, exist_ok=True)
+            self._router = LXMF.LXMRouter(
+                identity=self._identity, storagepath=storage_path
+            )
+
+            # Register delivery identity
+            self._delivery_dest = self._router.register_delivery_identity(
+                self._identity, "Rover", None
+            )
+            self._delivery_dest.announce()
+
+            # Register callback
+            self._router.register_delivery_callback(self._on_lxmf_message)
+
+            return self._identity.hash.hex()
+
+        # Run ALL synchronous init in executor thread
+        identity_hash = await self._hass.async_add_executor_job(_init)
+        self._identity_hash = identity_hash
+
+        # Schedule async periodic announce (this is safe for event loop)
         asyncio.ensure_future(self._periodic_path_announces())
-        
-        return self._identity.hash.hex()
+
+        return identity_hash
 
     async def _periodic_path_announces(self) -> None:
         while not self._shutdown:
             if self._identity:
                 try:
-                    RNS.Transport.request_path(self._identity.hash)
-                except Exception as e:
-                    self._logger.error("Error requesting path: %s", e)
-            await asyncio.sleep(300)
+                    await self._hass.async_add_executor_job(
+                        RNS.Transport.request_path, self._identity.hash
+                    )
+                except Exception:
+                    pass
+            await asyncio.sleep(60)
 
     def _on_lxmf_message(self, message: LXMF.LXMessage) -> None:
         if self._shutdown:
@@ -204,9 +225,16 @@ class RoverTransport:
 
     async def shutdown(self) -> None:
         self._shutdown = True
-        if self._router:
-            self._router.stop()
-            self._router = None
+
+        def _do_shutdown() -> None:
+            if self._router:
+                try:
+                    self._router.stop()
+                except Exception:
+                    pass
+
+        await self._hass.async_add_executor_job(_do_shutdown)
+        self._router = None
         self._identity = None
         self._delivery_dest = None
         self._logger.info("Transport shutdown complete")

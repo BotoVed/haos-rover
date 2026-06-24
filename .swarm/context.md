@@ -49,19 +49,19 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 776 | 776 | 0 | 601ms |
-| bash | 513 | 513 | 0 | 659ms |
-| edit | 208 | 208 | 0 | 27ms |
+| read | 784 | 784 | 0 | 596ms |
+| bash | 547 | 547 | 0 | 1167ms |
+| edit | 215 | 215 | 0 | 27ms |
 | glob | 166 | 166 | 0 | 626ms |
-| grep | 112 | 112 | 0 | 34ms |
-| task | 88 | 88 | 0 | 92031ms |
+| grep | 113 | 113 | 0 | 34ms |
+| task | 90 | 90 | 0 | 91597ms |
 | write | 70 | 70 | 0 | 21ms |
-| syntax_check | 44 | 44 | 0 | 50ms |
+| syntax_check | 46 | 46 | 0 | 49ms |
 | declare_scope | 28 | 28 | 0 | 5ms |
-| search | 25 | 25 | 0 | 33ms |
+| search | 28 | 28 | 0 | 30ms |
 | update_task_status | 20 | 20 | 0 | 33ms |
+| summarize_work | 17 | 17 | 0 | 56ms |
 | retrieve_summary | 15 | 15 | 0 | 5ms |
-| summarize_work | 15 | 15 | 0 | 62ms |
 | todo_extract | 12 | 12 | 0 | 3ms |
 | swarm_command | 11 | 11 | 0 | 44ms |
 | test_runner | 11 | 11 | 0 | 776ms |
@@ -96,3 +96,4 @@ Entry points: custom_components/rover/
 | req_coverage | 1 | 1 | 0 | 4ms |
 | symbols | 1 | 1 | 0 | 11ms |
 | batch_symbols | 1 | 1 | 0 | 18ms |
+| checkpoint | 1 | 1 | 0 | 9ms |
