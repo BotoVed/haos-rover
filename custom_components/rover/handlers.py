@@ -5,8 +5,6 @@ import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.service import ServiceTarget
-
 from .const import (
     TP_CMD,
     TP_PING_PONG,
@@ -122,7 +120,7 @@ class RoverHandlers:
                     service,
                     service_data,
                     blocking=True,
-                    target=ServiceTarget(entity_ids=[device["entity_id"]]),
+                    target={"entity_id": [device["entity_id"]]},
                 )
         except Exception as e:
             _LOGGER.error("Error executing command: %s", e)

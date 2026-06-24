@@ -200,8 +200,8 @@ class TestCmd:
         args, kwargs = mock_hass.services.async_call.call_args
         assert args == ("switch", "turn_on", {})
         assert kwargs["blocking"] is True
-        # ServiceTarget is a MagicMock (from the stub); entity_ids was passed
-        assert isinstance(kwargs["target"], MagicMock)
+        # target is a dict with entity_id list
+        assert kwargs["target"] == {"entity_id": ["switch.test"]}
         mock_transport.send.assert_not_called()
 
     async def test_multiple_service_calls(

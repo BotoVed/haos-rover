@@ -49,15 +49,15 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 756 | 756 | 0 | 617ms |
-| bash | 492 | 492 | 0 | 647ms |
-| edit | 201 | 201 | 0 | 28ms |
-| glob | 165 | 165 | 0 | 629ms |
-| grep | 108 | 108 | 0 | 34ms |
-| task | 86 | 86 | 0 | 93373ms |
-| write | 69 | 69 | 0 | 21ms |
-| syntax_check | 43 | 43 | 0 | 51ms |
-| declare_scope | 26 | 26 | 0 | 5ms |
+| read | 776 | 776 | 0 | 601ms |
+| bash | 513 | 513 | 0 | 659ms |
+| edit | 208 | 208 | 0 | 27ms |
+| glob | 166 | 166 | 0 | 626ms |
+| grep | 112 | 112 | 0 | 34ms |
+| task | 88 | 88 | 0 | 92031ms |
+| write | 70 | 70 | 0 | 21ms |
+| syntax_check | 44 | 44 | 0 | 50ms |
+| declare_scope | 28 | 28 | 0 | 5ms |
 | search | 25 | 25 | 0 | 33ms |
 | update_task_status | 20 | 20 | 0 | 33ms |
 | retrieve_summary | 15 | 15 | 0 | 5ms |
@@ -69,10 +69,10 @@ Entry points: custom_components/rover/
 | diff | 10 | 10 | 0 | 31ms |
 | web_search | 10 | 10 | 0 | 5ms |
 | skill | 6 | 6 | 0 | 44ms |
+| placeholder_scan | 6 | 6 | 0 | 54ms |
 | get_approved_plan | 5 | 5 | 0 | 4ms |
 | check_gate_status | 5 | 5 | 0 | 42ms |
 | webfetch | 5 | 5 | 0 | 373ms |
-| placeholder_scan | 5 | 5 | 0 | 64ms |
 | save_plan | 4 | 4 | 0 | 132ms |
 | set_qa_gates | 3 | 3 | 0 | 47ms |
 | build_check | 3 | 3 | 0 | 77ms |

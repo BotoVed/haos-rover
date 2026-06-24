@@ -243,8 +243,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             if runtime and runtime.registry and self._short_id:
                 device = runtime.registry.get_device(self._short_id)
                 if device:
-                    from homeassistant.helpers.service import ServiceTarget
-
                     from .commands import build_service_call
 
                     action = user_input.get("action", "turn_on")
@@ -252,14 +250,11 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                         device["type"], {"s": action == "turn_on"}
                     )
                     for domain, svc, service_data in calls:
-                        target = ServiceTarget(
-                            entity_ids=[device["entity_id"]]
-                        )
                         await runtime.hass.services.async_call(
                             domain,
                             svc,
                             service_data,
-                            target=target,
+                            target={"entity_id": [device["entity_id"]]},
                             blocking=True,
                         )
             self._short_id = None
