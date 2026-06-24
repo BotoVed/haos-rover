@@ -1,229 +1,154 @@
-<<<<<<< HEAD
-# Rover — Remote Over Radio for Home Assistant
+<img src="brand/icon.png" width="120" align="right">
 
-**Version 0.0.2** — Core Protocol Foundations
+# Rover
 
-Rover is a [Home Assistant](https://www.home-assistant.io) custom component that extends smart home control across [Reticulum](https://reticulum.network) mesh networks. It enables secure, decentralized control of Home Assistant devices from remote locations without relying on cloud infrastructure, internet connectivity, or centralized servers.
+**Remote Over Radio** — управление умным домом через mesh-сети, когда интернета нет или он заблокирован.
 
-Using Reticulum's encrypted mesh networking and LXMF messaging, Rover pairs with a mobile companion app to provide remote control of switches, lights, covers, climate systems, locks, media players, sensors, fans, and more — all over peer-to-peer radio links.
+Живёшь в доме на колёсах? На яхте? На даче без стабильного сигнала? Rover выбрасывает интернет из цепочки управления полностью.
 
-## Features
+Телефон → LoRa-радио → километры воздуха → шлюз → Home Assistant. Никаких облаков, никаких серверов, никаких подписок. Работает даже когда оператор заблокировал всё, что можно.
 
-- **Mesh-Native Control** — Control HA devices over Reticulum mesh networks using encrypted LXMF messaging
-- **11 Device Types** — Switch, Light, Cover, Climate, Lock, Media Player, Scene, Alarm Panel, Sensor, Fan, and Button
-- **Compact Wire Protocol** — msgpack-encoded messages with integer-keyed fields for minimal bandwidth usage
-- **Secure Identity** — Identity-hash-based authentication with QR token pairing and role-based access (owner/regular)
-- **Persistent Registry** — HA Store-backed CRUD for users, devices, areas, and pending remote approvals
-- **State Synchronization** — Extracts HA entity state into compact protocol format for push updates
-- **Section Hash Tracking** — MD5-based section hashes for efficient sync and change detection
-- **Offline-First** — Designed for intermittent mesh connectivity with opportunistic transmission and watchdog recovery
+## Как это устроено
 
-## Architecture
+Rover построен на [Reticulum](https://reticulum.network/) — полноценном mesh-сетевом стеке с end-to-end шифрованием, маршрутизацией до 128 хопов и встроенной доставкой с подтверждением.
+
+Поверх Reticulum работает [LXMF](https://github.com/markqvist/LXMF) — лёгкий протокол сообщений. Он берёт на себя шифрование, фрагментацию, retry и store-and-forward. Нам не нужно изобретать свои очереди и ACK — всё уже есть в стеке.
+
+Типичный сценарий для RV:
+- **В дороге:** телефон через BLE связан с LoRa-модулем (RNode) и общается с домашним HA через mesh-сеть.
+- **Дома:** телефон в локальной сети достигает HA через WiFi-интерфейс Reticulum — быстро и без радио.
+
+Одна и та же Identity на телефоне работает через любой доступный интерфейс автоматически.
+
+## Что делает плагин
+
+Rover — это интеграция Home Assistant (HACS custom component). Она реализует шлюз между экосистемой HA и mesh-сетью Reticulum:
+
+| Компонент | Назначение |
+|---|---|
+| **codec.py** | msgpack-кодирование wire-формата — минимальный размер пакета |
+| **registry.py** | Постоянное хранилище пользователей, устройств, зон и отложенных регистраций на базе HA Store |
+| **commands.py** | Построитель HA service call из wire-команды — 11 типов устройств |
+| **state_extractor.py** | Извлечение состояния HA-сущности в компактный протокольный формат |
+| **rns_transport.py** | Identity Reticulum, LXMF-сервер, bimodal send (OPPORTUNISTIC / DIRECT) |
+| **dispatcher.py** | Маршрутизация входящих сообщений по типу (CMD, PING, REQ, REGISTER) |
+| **handlers.py** | Обработчики протокола — авторизация, исполнение команд, сравнение хешей секций, регистрация пультов |
+| **ha_bridge.py** | Подписка на state_changed HA, PUSH-уведомления, периодический PONG broadcast |
+| **config_flow.py** | Мастер установки через UI Home Assistant |
+| **options_flow.py** | Управление устройствами, пользователями, зонами, QR-кодами |
+
+## Безопасность и доступ
+
+- **Нет паролей.** Авторизация исключительно через криптографические Identity Reticulum (Ed25519/X25519). Подделать отправителя невозможно.
+- **Ручное одобрение.** Новый телефон сканирует QR-код с экрана HA → отправляет запрос регистрации → владелец (owner) одобряет через UI Home Assistant. Первый зарегистрированный телефон автоматически становится owner'ом.
+- **Лимит 5 активных пультов.** PUSH-уведомления об изменении состояний рассылаются unicast'ом каждому одобренному remote'у. Лимит защищает сеть от перегрузки в сценарии RV.
+- **Ролевая модель:** owner (полный доступ) и regular (ограниченный). Роль назначается при одобрении.
+
+## Что умеет
+
+- **Свет** — вкл/выкл, яркость (0–100%), цветовая температура, RGB, эффекты
+- **Климат** — HVAC-режим, целевая температура, preset, fan mode, swing
+- **Датчики** — температура, влажность, протечка, движение, окна (всё как строка — гибко и надёжно)
+- **Безопасность** — замки, сигнализация (arm_home/arm_away/arm_night/disarm)
+- **Жалюзи / шторы** — open/close/stop/set, позиция, угол наклона
+- **Медиа-плеер** — play/pause/volume, title/artist/album, позиция трека
+- **Автоматика** — сцены, кнопки, любые переключатели
+- **Вентилятор** — скорость, preset, осцилляция
+
+**11 типов устройств HA** из коробки.
+
+## Железо
+
+- **Шлюз (HA):** любой одноплатник с Linux + USB-LoRa модуль на чипе SX127x / SX126x / SX1280 / LR1121, прошитый как **RNode** (firmware Reticulum). Можно перепрошить бывшие Meshtastic-устройства.
+- **Клиент (телефон):** Android/iOS + BLE-связанный RNode (тот же класс устройств). Мобильное приложение — в разработке.
+- **Дальность:** до нескольких километров в прямой видимости, километры в лесу/городе через mesh.
+
+Rover не привязан к конкретному радио — Reticulum работает поверх LoRa, TCP, UDP, WiFi и даже I2P. На HA-шлюзе можно поднять TCP-интерфейс для быстрого доступа по локальной сети.
+
+## Установка
+
+### Плагин Home Assistant (HACS)
+
+1. HACS → Integrations → ⋮ → Custom repositories.
+2. Добавить `https://github.com/BotoVed/haos-rover` как **Integration**.
+3. Установить **Rover**, перезапустить Home Assistant.
+4. Settings → Devices & Services → Add → Rover.
+5. Откройте **Настроить** у интеграции Rover → добавьте устройства из HA → покажите QR-код для регистрации телефонов.
+
+### Вручную
+
+Скопировать `custom_components/rover/` в директорию `custom_components/` вашего Home Assistant и перезапустить.
+
+Зависимости (`rns`, `lxmf`, `msgpack`) указаны в `manifest.json` и устанавливаются автоматически через HACS.
+
+## Поддерживаемые типы устройств
+
+| Тип | HA domain | Код |
+|---|---|---|
+| Свет | `light` | LT |
+| Переключатель | `switch` | SW |
+| Климат | `climate` | CL |
+| Вентилятор | `fan` | FN |
+| Жалюзи / шторы | `cover` | CV |
+| Замок | `lock` | LK |
+| Двоичный датчик | `binary_sensor` | BS |
+| Датчик | `sensor` | SE |
+| Кнопка / сцена | `button`, `scene` | BT, SC |
+| Сигнализация | `alarm_control_panel` | AL |
+| Медиа-плеер | `media_player` | MS |
+
+## Протокол на одном листе
+
+Rover использует компактный wire-формат — msgpack с целочисленными ключами полей. 8 типов сообщений:
+
+| Код | Тип | Назначение |
+|---|---|---|
+| 2 | STATUS | Отчёт о состоянии устройств |
+| 3 | PUSH | Уведомление об изменении состояния |
+| 4 | CONFIG | Обмен конфигурацией (хеши секций, устройства, зоны) |
+| 5 | CMD | Команда устройству |
+| 6 | PING / PONG | Проверка соединения, синхронизация хешей |
+| 7 | FORBIDDEN | Отказ в доступе |
+| 8 | REQ | Запрос данных |
+| 9 | REGISTER | Регистрация пульта |
+
+## Структура репозитория
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Home Assistant                        │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │               Rover Integration                   │  │
-│  │  ┌──────────┐  ┌───────────────┐  ┌───────────────────┐  │  │
-│  │  │  Codec   │  │  Command      │  │  State Extractor  │  │  │
-│  │  │ (msgpack)│  │  Builder      │  │  (HA→Protocol)    │  │  │
-│  │  └──────────┘  └───────────────┘  └───────────────────┘  │  │
-│  │  ┌───────────────────────────────────────────────────┐  │  │
-│  │  │               Registry (HA Store)                 │  │  │
-│  │  │       Meta · Users · Areas · Devices · Pending   │  │  │
-│  │  └───────────────────────────────────────────────────┘  │  │
-│  │  ┌─────────────────┐  ┌──────────────┐  ┌────────────┐  │  │
-│  │  │   Transport     │  │  Dispatcher  │  │  Handlers  │  │  │
-│  │  │  (RNS/LXMF)     │  │  (Routing)   │  │ (CMD/PING/ │  │  │
-│  │  │                 │  │              │  │ REQ/REG)   │  │  │
-│  │  └─────────────────┘  └──────────────┘  └────────────┘  │  │
-│  └───────────────────────────────────────────────────┘  │
-│                   │ LXMF over Reticulum                  │
-│                   ▼                                      │
-│            ┌──────────────┐                              │
-│            │ Mesh Network │                              │
-│            │ (Radio/TCP)  │                              │
-│            └──────────────┘                              │
-└─────────────────────────────────────────────────────────┘
+custom_components/rover/     # Код интеграции
+tests/                       # 300+ юнит-тестов (pytest, без HA)
 ```
 
-## Protocol
+Детальная спецификация протокола и архитектурные решения — в файлах:
+- `SPEC.md` — спецификация протокола и системы
+- `DECISIONS.md` — журнал архитектурных решений
 
-Rover defines a compact wire protocol with 8 message types:
-
-| Code | Message   | Purpose                     |
-|------|-----------|-----------------------------|
-| 2    | STATUS    | Device state report         |
-| 3    | PUSH      | State update push           |
-| 4    | CONFIG    | Configuration exchange      |
-| 5    | CMD       | Device command              |
-| 6    | PING_PONG | Keepalive / path discovery  |
-| 7    | FORBIDDEN | Access denied               |
-| 8    | REQ       | Data request                |
-| 9    | REGISTER  | Remote registration         |
-
-### Device Types
-
-| Code | Domain             | Name         |
-|------|--------------------|--------------|
-| SW   | switch             | Switch       |
-| LT   | light              | Light        |
-| CV   | cover              | Cover        |
-| CL   | climate            | Climate      |
-| LK   | lock               | Lock         |
-| MS   | media_player       | Media Player |
-| SC   | scene              | Scene        |
-| AL   | alarm_control_panel| Alarm Panel  |
-| SE   | sensor             | Sensor       |
-| FN   | fan                | Fan          |
-| BT   | button             | Button       |
-
-## Installation
-
-### Via HACS (recommended)
-
-1. Ensure [HACS](https://hacs.xyz) is installed in your Home Assistant instance
-2. Add this repository as a custom repository in HACS:
-   - URL: `https://github.com/BotoVed/haos-rover`
-   - Category: Integration
-3. Search for "Rover" in HACS and install
-4. Restart Home Assistant
-
-### Manual
-
-1. Copy the `custom_components/rover/` directory to your Home Assistant `custom_components/` directory
-2. Restart Home Assistant
-
-## Configuration
-
-Rover is configured entirely through the Home Assistant UI (Config Flow):
-
-1. Go to **Settings → Devices & Services → Add Integration**
-2. Search for "Rover"
-3. Follow the setup wizard to configure your Reticulum identity and network settings
-
-> **Note:** Reticulum (`rns>=1.3.0`) and LXMF (`lxmf>=0.9.6`) must be installed in your Home Assistant Python environment. These dependencies are declared in the integration manifest.
-
-## Development Setup
-
-### Prerequisites
-
-- Python 3.12+
-- Home Assistant 2024.12+ (for integration testing)
-
-### Getting Started
+## Разработка
 
 ```bash
-# Clone the repository
 git clone https://github.com/BotoVed/haos-rover.git
 cd haos-rover
-
-# Create a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install with dev dependencies
 pip install -e ".[dev]"
-
-# Run tests
 pytest
 ```
 
-### Project Structure
+## Версия
 
-```
-custom_components/rover/
-├── __init__.py          # Integration setup, RoverRuntimeData
-├── manifest.json        # HA integration manifest
-├── const.py             # All protocol constants, device type definitions
-├── codec.py             # msgpack encode/decode for wire format
-├── registry.py          # HA Store-backed persistent CRUD registry
-├── commands.py          # CMD → HA service call builder (11 device types)
-├── state_extractor.py   # HA entity state → protocol format extraction
-├── rns_transport.py     # RNS/LXMF transport (identity, send, shutdown)
-├── dispatcher.py        # Message routing by type with wire key normalization
-└── handlers.py          # Protocol handlers (CMD, PING, REQ, REGISTER)
-```
+Текущая: **0.2.0** — все модули ядра и HA-интеграция реализованы. Config flow и bridge работают. Дорожная карта до v1.0.0:
 
-### Completed Modules
+- Мобильное приложение (Rover-App)
+- Карточка Lovelace (Rover-Card)
+- Расширенная маршрутизация через mesh
+- Интеграционное тестирование на реальном железе
 
-#### Phase 1 — Core Protocol
+## Лицензия
 
-- **const.py** — All protocol constants: 8 message types, 11 device type definitions, identity/section hash lengths, role permissions, push throttling, QR token format, logger hierarchy, storage keys, and operational timing constants
-- **codec.py** — `encode(fields)` / `decode(data)` using msgpack with `use_bin_type=True` for compact wire encoding
-- **registry.py** — `RoverRegistry` with HA `Store` persistence, supporting 5 protocol sections (meta, users, areas, devices, pending), section hash computation (canonical JSON → MD5 → 4-char hex), QR token authentication, role enforcement (owner/regular), and mutation callbacks for change propagation
-- **commands.py** — `build_service_call(device_type, cmd_fields)` producing `list[tuple[domain, service, service_data]]` for all 11 device types: SW (on/off), LT (brightness/color_temp/rgb/effect), CV (open/close/stop/position/tilt), CL (hvac/temperature/fan/preset/swing), LK (lock/unlock), MS (play/pause/stop/next/prev/volume/mute/seek), SC (turn_on), AL (arm_home/arm_away/arm_night/disarm), SE (read-only), FN (on/off/percentage/preset/oscillate/direction), BT (press)
-- **state_extractor.py** — `extract_state(state, attributes, device_type)` converting HA entity states to compact protocol format with per-device-type field mappings
+GPL v3 — код открыт, форки приветствуются, проприетарные обёртки не разрешены.
 
-#### Phase 2 — Reticulum Transport & Message Handling
+Если Rover вам пригодился — GitHub Sponsors поможет проекту жить.
 
-- **rns_transport.py** — `RoverTransport`: Identity loading/creation from HA config directory, LXMF router initialization with delivery identity registration, bimodal `send()` (opportunistic for ≤350 B, direct for larger payloads), incoming message callback dispatch, periodic path announces every 300 s, and graceful `shutdown()` lifecycle
-- **dispatcher.py** — `RoverDispatcher`: Normalizes wire integer keys to human-readable string keys via per-type `_TP_MAPS` (STATUS, PUSH, CONFIG, CMD, PING/PONG, FORBIDDEN, REQ, REGISTER). Routes inbound messages to registered handler callbacks by `tp` value, with a fallback default handler for unknown types
-- **handlers.py** — `RoverHandlers`: Registers four protocol handlers with the dispatcher. `_handle_cmd` — authorizes sender via registry, builds and executes HA service calls. `_handle_ping` — compares client section hashes against registry, returns PONG with diff sections and STATUS. `_handle_req` — returns requested config sections and STATUS. `_handle_register` — validates QR token, approves remote identity, returns full CONFIG and STATUS
+---
 
-### Upcoming Phases
-
-- **Phase 3:** Config flow — UI-based setup wizard, QR code pairing, device and area management panels
-- **Phase 4:** Bridge service — LXMF ↔ HA bridge, connection pool, PUSH broadcast scheduling, opportunistic transmission, watchdog recovery
-
-## Testing
-
-Rover uses pytest with async support. The test suite includes stubs for Home Assistant internals, RNS, LXMF, and voluptuous, so tests run without requiring a real HA instance.
-
-```bash
-# Run all tests (300+ tests)
-pytest
-
-# Run with coverage
-pytest --cov=custom_components.rover
-
-# Run specific test file
-pytest tests/test_commands.py -v
-```
-
-Test modules:
-- `test_codec.py` — msgpack roundtrip and edge cases
-- `test_const.py` — all constant values, type definitions, mappings
-- `test_commands.py` — service call builder for all 11 device types
-- `test_state_extractor.py` — state extraction for all device types
-- `test_registry.py` — CRUD operations, hash computation, QR tokens, callbacks, persistence
-- `test_rns_transport.py` — transport lifecycle, identity loading, send/encode
-- `test_dispatcher.py` — wire key normalization, handler registration, dispatch routing
-- `test_handlers.py` — CMD authorization, PING diff comparison, REQ config serving, REGISTER flow
-- `test_init.py` — version, `RoverRuntimeData`, setup/unload stubs, manifest validation
-
-## Performance
-
-Rover is designed for low-bandwidth mesh networks:
-
-- **Wire format overhead:** msgpack with integer-keyed field mapping minimizes message size
-- **Opportunistic threshold:** Messages under 350 bytes are sent immediately on available paths
-- **Push throttle:** State updates are throttled to 500ms intervals to prevent message storms
-- **Pong broadcast:** 8-second keepalive interval for path maintenance
-- **Watchdog:** 30-second connection health monitoring
-
-## Security
-
-- **Identity-based auth:** Remote identities are verified by cryptographic hash
-- **QR token pairing:** One-time tokens for secure initial enrollment
-- **Role-based access:** Owner (first user) and regular user roles
-- **Configurable limits:** Maximum 5 active remotes, 10 pending approvals
-- **Section hashing:** Tamper-evident section hashes for data integrity
-
-## License
-
-MIT
-
-## Disclaimer
-
-Rover is in early development (v0.0.2). The core protocol foundations, Reticulum transport, and message handler layers are complete. The config flow UI and bridge service are under active development. Expect breaking changes before v1.0.0.
-=======
-# HaOS-Rover
-
-Home Assistant OS Rover — [опишите проект здесь]
-
-## Статус
-
-Проект в начальной стадии.
->>>>>>> e50fcc83bb6a9450762f5e02ae208c9a0932ef1e
+*Rover: потому что 21 век обещал нам летающие машины, а доставил блокировки интернета. Будем работать с тем, что есть.*
