@@ -272,7 +272,8 @@ class TestAsyncStart:
         config_dir = tempfile.mkdtemp()
         tr = _make_transport(config_dir=config_dir)
         await tr.async_start()
-        config_path = os.path.join(config_dir, "reticulum.json")
+        # RNS expects a file named "config" (ConfigObj INI format)
+        config_path = os.path.join(config_dir, "config")
         assert os.path.exists(config_path)
 
     @pytest.mark.asyncio

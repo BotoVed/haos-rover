@@ -49,24 +49,24 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 784 | 784 | 0 | 596ms |
-| bash | 547 | 547 | 0 | 1167ms |
-| edit | 215 | 215 | 0 | 27ms |
+| read | 799 | 799 | 0 | 585ms |
+| bash | 572 | 572 | 0 | 1262ms |
+| edit | 221 | 221 | 0 | 27ms |
 | glob | 166 | 166 | 0 | 626ms |
-| grep | 113 | 113 | 0 | 34ms |
-| task | 90 | 90 | 0 | 91597ms |
+| grep | 121 | 121 | 0 | 33ms |
+| task | 92 | 92 | 0 | 91665ms |
 | write | 70 | 70 | 0 | 21ms |
 | syntax_check | 46 | 46 | 0 | 49ms |
 | declare_scope | 28 | 28 | 0 | 5ms |
 | search | 28 | 28 | 0 | 30ms |
 | update_task_status | 20 | 20 | 0 | 33ms |
-| summarize_work | 17 | 17 | 0 | 56ms |
+| summarize_work | 18 | 18 | 0 | 53ms |
 | retrieve_summary | 15 | 15 | 0 | 5ms |
+| test_runner | 13 | 13 | 0 | 754ms |
 | todo_extract | 12 | 12 | 0 | 3ms |
 | swarm_command | 11 | 11 | 0 | 44ms |
-| test_runner | 11 | 11 | 0 | 776ms |
+| diff | 11 | 11 | 0 | 40ms |
 | knowledge_add | 11 | 11 | 0 | 170ms |
-| diff | 10 | 10 | 0 | 31ms |
 | web_search | 10 | 10 | 0 | 5ms |
 | skill | 6 | 6 | 0 | 44ms |
 | placeholder_scan | 6 | 6 | 0 | 54ms |
@@ -97,3 +97,11 @@ Entry points: custom_components/rover/
 | symbols | 1 | 1 | 0 | 11ms |
 | batch_symbols | 1 | 1 | 0 | 18ms |
 | checkpoint | 1 | 1 | 0 | 9ms |
+## Versioning & Commit Rules (from 24.06.2026)
+- После таски + минор → bump minor (0.0.1 → 0.1.0)
+- После исправлений (bugfix) → ++patch (0.0.1 → 0.0.2)
+- После релиза → ++major (0.0.1 → 1.0.0)
+- После тестирования со мной → ++patch (0.2.0 → 0.2.1)
+- Тег: semver без v-префикса (HACS reject non-standard)
+- После коммита — git push (commit + tag)
+- Перед деплоем на HAOS — git push, ZIP собрать, Release создать (Actions || руками)

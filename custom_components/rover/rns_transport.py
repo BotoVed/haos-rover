@@ -99,22 +99,29 @@ class RoverTransport:
                 self._identity = RNS.Identity()
                 self._identity.to_file(identity_path)
 
-            # Write RNS config
-            config_path = os.path.join(self._config_dir, "reticulum.json")
+            # Write RNS config (ConfigObj INI format)
+            config_path = os.path.join(self._config_dir, "config")
             with open(config_path, "w") as f:
-                f.write(
-                    '{\n  "interfaces": [\n'
-                    '    {\n'
-                    f'      "type": "TCPServerInterface",\n'
-                f'      "port": {self._tcp_port},\n'
-                f'      "enabled": true\n'
-                '    }\n'
-                '  ]\n'
-                '}}'
-                )
+                f.write("[reticulum]\n")
+                f.write("enable_transport = True\n")
+                f.write("share_instance = Yes\n")
+                f.write("\n")
+                f.write("[logging]\n")
+                f.write("loglevel = 3\n")
+                if self._tcp_port > 0:
+                    f.write("\n")
+                    f.write("[interfaces]\n")
+                    f.write("  [[Rover TCP]]\n")
+                    f.write("    type = TCPServerInterface\n")
+                    f.write("    enabled = Yes\n")
+                    f.write("    listen_ip = 0.0.0.0\n")
+                    f.write(f"    listen_port = {self._tcp_port}\n")
 
-            # Initialize RNS
-            RNS.Reticulum(configdir=self._config_dir)
+            # Initialize RNS (singleton — may already be running)
+            try:
+                RNS.Reticulum(configdir=self._config_dir)
+            except OSError:
+                self._logger.warning("RNS already running, reusing existing instance")
             RNS.loglevel = RNS.LOG_EXTREME
             RNS.logdest = RNS.LOG_STDOUT
 
