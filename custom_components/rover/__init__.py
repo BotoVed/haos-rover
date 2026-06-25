@@ -1,7 +1,7 @@
 """Rover — Remote Over Radio for Home Assistant."""
 from __future__ import annotations
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 import logging
 from typing import Callable
@@ -83,7 +83,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # 7. Register cleanup on HA stop
     async def _shutdown(event):
-        await async_unload_entry(hass, entry)
+        if runtime.transport:
+            await runtime.transport.shutdown(full_teardown=True)
+        if runtime.bridge:
+            await runtime.bridge.async_stop()
+        async_unregister_services(hass)
+        if runtime._unsub_stop:
+            runtime._unsub_stop()
+        hass.data.setdefault(DOMAIN, {}).pop(entry.entry_id, None)
 
     runtime._unsub_stop = hass.bus.async_listen_once(
         EVENT_HOMEASSISTANT_STOP, _shutdown

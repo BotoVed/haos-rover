@@ -28,6 +28,10 @@ from .registry import RoverRegistry
 
 _RNS_INITIALIZED = False
 
+# Module-level singleton to survive RoverTransport instance re-creation on reload
+_LXMF_STATE: dict[str, Any] | None = None
+_RNS_INSTANCE_HASH: str | None = None  # Track which Reticulum instance this belongs to
+
 _OUT_KEY_MAP: dict[str, int] = {
     # Message envelope
     "tp": 1, "section": 2, "h": 3, "data": 4,
@@ -91,93 +95,111 @@ class RoverTransport:
 
         def _init() -> str:
             import signal as signal_module
+            global _LXMF_STATE, _RNS_INSTANCE_HASH
             
-            # Check if Reticulum is already initialized
             existing = getattr(RNS.Reticulum, "_Reticulum__instance", None)
+            identity_path = os.path.join(self._config_dir, "identity")
             
             if existing is not None:
-                self._logger.warning("RNS already initialized on reload — reusing instance")
+                self._logger.info("RNS already initialized on reload — reusing instance")
             else:
-                # First-time init or after complete shutdown
-                # Detach any stale interfaces first
                 try:
                     if hasattr(RNS.Transport, 'interfaces') and RNS.Transport.interfaces:
                         RNS.Transport.detach_interfaces()
                 except Exception:
                     pass
-
-            # Save and monkey-patch signal.signal (needed for both first-time and reuse cases)
+            
             _orig_signal = signal_module.signal
             signal_module.signal = lambda signum, handler: None
-
             try:
-                # Create config dir
                 os.makedirs(self._config_dir, exist_ok=True)
-
-                # Load/create identity
-                identity_path = os.path.join(self._config_dir, "identity")
+                
                 if os.path.exists(identity_path):
                     self._identity = RNS.Identity.from_file(identity_path)
                 else:
                     self._identity = RNS.Identity()
                     self._identity.to_file(identity_path)
-
-                # Write RNS config (ConfigObj INI format) — needed only for first init
+                
+                identity_hash_hex = self._identity.hash.hex()
+                
+                # Write RNS config (idempotent)
                 config_path = os.path.join(self._config_dir, "config")
                 with open(config_path, "w") as f:
                     f.write("[reticulum]\n")
                     f.write("enable_transport = True\n")
-                    f.write("share_instance = Yes\n")
-                    f.write("\n")
+                    f.write("share_instance = Yes\n\n")
                     f.write("[logging]\n")
                     f.write("loglevel = 3\n")
                     if self._tcp_port > 0:
-                        f.write("\n")
-                        f.write("[interfaces]\n")
+                        f.write("\n[interfaces]\n")
                         f.write("  [[Rover TCP]]\n")
                         f.write("    type = TCPServerInterface\n")
                         f.write("    enabled = Yes\n")
                         f.write("    listen_ip = 0.0.0.0\n")
                         f.write(f"    listen_port = {self._tcp_port}\n")
-
-                # Initialize RNS only if not already running
+                
                 if existing is None:
                     RNS.Reticulum(configdir=self._config_dir)
                     RNS.loglevel = RNS.LOG_EXTREME
                     RNS.logdest = RNS.LOG_STDOUT
+                
+                # Try to reuse existing LXMF router (RELOAD case)
+                if _LXMF_STATE is not None and _LXMF_STATE.get("identity_hash") == identity_hash_hex:
+                    self._router = _LXMF_STATE["router"]
+                    self._delivery_dest = _LXMF_STATE["delivery_dest"]
+                    self._logger.info("Reusing existing LXMF router (identity=%s...)", identity_hash_hex[:16])
+                    # Re-register callback (old one points to dead RoverTransport)
+                    self._router.register_delivery_callback(self._on_lxmf_message)
+                    # Re-announce so peers refresh paths
+                    try:
+                        self._delivery_dest.announce()
+                    except Exception:
+                        pass
                 else:
-                    self._logger.info("Skipping Reticulum init — instance already exists")
-
-                global _RNS_INITIALIZED
-                _RNS_INITIALIZED = True
-
-                # Create LXMF router (always needed, even on reload)
-                storage_path = os.path.join(self._config_dir, "lxmf_storage")
-                os.makedirs(storage_path, exist_ok=True)
-                self._router = LXMF.LXMRouter(
-                    identity=self._identity, storagepath=storage_path
-                )
-
-                # Register delivery identity
-                self._delivery_dest = self._router.register_delivery_identity(
-                    self._identity, "Rover", None
-                )
-                self._delivery_dest.announce()
-
-                # Register callback
-                self._router.register_delivery_callback(self._on_lxmf_message)
-
-                return self._identity.hash.hex()
+                    # First-time init OR identity changed → create new router
+                    storage_path = os.path.join(self._config_dir, "lxmf_storage")
+                    os.makedirs(storage_path, exist_ok=True)
+                    
+                    # If old _LXMF_STATE exists with different identity, tear it down first
+                    if _LXMF_STATE is not None:
+                        old_dest = _LXMF_STATE.get("delivery_dest")
+                        old_router = _LXMF_STATE.get("router")
+                        if old_dest is not None:
+                            try:
+                                RNS.Transport.deregister_destination(old_dest)
+                            except Exception:
+                                pass
+                        if old_router is not None:
+                            try:
+                                old_router.stop()
+                            except Exception:
+                                pass
+                        _LXMF_STATE = None
+                    
+                    self._router = LXMF.LXMRouter(
+                        identity=self._identity, storagepath=storage_path
+                    )
+                    self._delivery_dest = self._router.register_delivery_identity(
+                        self._identity, "Rover", None
+                    )
+                    self._delivery_dest.announce()
+                    self._router.register_delivery_callback(self._on_lxmf_message)
+                    
+                    _LXMF_STATE = {
+                        "router": self._router,
+                        "delivery_dest": self._delivery_dest,
+                        "identity_hash": identity_hash_hex,
+                    }
+                    self._logger.info("Created new LXMF router (identity=%s...)", identity_hash_hex[:16])
+                
+                return identity_hash_hex
             finally:
                 signal_module.signal = _orig_signal
 
         # Run synchronous init in executor (with signal patch)
         identity_hash = await self._hass.async_add_executor_job(_init)
         self._identity_hash = identity_hash
-
-        # Schedule async periodic announce
         asyncio.ensure_future(self._periodic_path_announces())
-
         return identity_hash
 
     async def _periodic_path_announces(self) -> None:
@@ -258,30 +280,40 @@ class RoverTransport:
     def _on_failed(self, msg: LXMF.LXMessage) -> None:
         self._logger.warning("Message delivery failed: %s", msg.hash.hex())
 
-    async def shutdown(self) -> None:
-        """Shutdown transport. On full integration unload, also stop Reticulum."""
+    async def shutdown(self, full_teardown: bool = False) -> None:
+        """Shutdown transport. full_teardown=True for HA stop; False for reload."""
         self._shutdown = True
 
         def _do_shutdown() -> None:
-            # Stop LXMF router first
-            if self._router:
+            if full_teardown:
+                global _LXMF_STATE
+                # Stop router
+                if self._router:
+                    try:
+                        self._router.stop()
+                    except Exception:
+                        pass
+                # Deregister delivery destination from RNS
+                if self._delivery_dest is not None:
+                    try:
+                        RNS.Transport.deregister_destination(self._delivery_dest)
+                    except Exception:
+                        pass
+                # Detach Reticulum interfaces
                 try:
-                    self._router.stop()
+                    if hasattr(RNS.Transport, 'interfaces') and RNS.Transport.interfaces:
+                        RNS.Transport.detach_interfaces()
                 except Exception:
                     pass
-                self._router = None
-
-            # Detach Reticulum interfaces
-            try:
-                if RNS.Transport.interfaces:
-                    RNS.Transport.detach_interfaces()
-            except Exception:
-                pass
+                _LXMF_STATE = None
+                self._logger.info("Transport full teardown complete")
+            # else: reload — keep _LXMF_STATE alive for next setup
 
         await self._hass.async_add_executor_job(_do_shutdown)
         self._identity = None
         self._delivery_dest = None
-        self._logger.info("Transport shutdown complete")
+        self._router = None
+        self._logger.info("Transport shutdown complete (full_teardown=%s)", full_teardown)
 
     def set_dispatcher_cb(self, callback: Callable[[bytes, dict], None]) -> None:
         self._on_message = callback
