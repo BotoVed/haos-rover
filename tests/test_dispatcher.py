@@ -49,7 +49,7 @@ class TestNormalize:
 
     def test_tp2_status_keys(self) -> None:
         """tp=2 (STATUS) applies per-tp map: v, s, b, ct, rgb."""
-        fields = {0: 2, 1: "v", 2: "s", 3: "b", 4: "ct", 5: "rgb"}
+        fields = {0: 2, 4: "v", 5: "s", 6: "b", 7: "ct", 8: "rgb"}
         tp, result = normalize(fields)
         assert tp == 2
         assert result["v"] == "v"
@@ -58,11 +58,11 @@ class TestNormalize:
         assert result["ct"] == "ct"
         assert result["rgb"] == "rgb"
         assert result["tp"] == 2
-        assert result["section"] == "v"  # key 1 also in general map
+        assert result.get("v") == "v"  # key 4 → "v" via TP_MAPS[2]
 
     def test_tp5_cmd_keys(self) -> None:
-        """tp=5 (CMD) maps key 2→'s' (state), key 1→'id'."""
-        fields = {0: 5, 1: 1001, 2: "on", 3: True, 4: 128}
+        """tp=5 (CMD) maps key 35→'id', key 5→'s', key 6→'b', key 7→'ct', key 8→'rgb'."""
+        fields = {0: 5, 35: 1001, 5: "on", 6: True, 7: 128}
         tp, result = normalize(fields)
         assert tp == 5
         assert result["id"] == 1001
@@ -70,11 +70,11 @@ class TestNormalize:
         assert result["b"] is True
         assert result["ct"] == 128
         assert result["tp"] == 5
-        assert result["section"] == 1001  # key 1 in general map
+        assert result.get("id") == 1001  # key 35 → "id" via TP_MAPS[5]
 
     def test_tp9_register_keys(self) -> None:
         """tp=9 (REGISTER) maps uid, dst, name."""
-        fields = {0: 9, 1: "uid_val", 2: "dst_val", 3: "name_val"}
+        fields = {0: 9, 49: "uid_val", 50: "dst_val", 36: "name_val"}
         tp, result = normalize(fields)
         assert tp == 9
         assert result["uid"] == "uid_val"
@@ -102,7 +102,7 @@ class TestNormalize:
         fields = {0: 5, 1: 42, "custom": "val"}
         tp, result = normalize(fields)
         assert tp == 5
-        assert result["id"] == 42
+        assert result["section"] == 42  # key 1 → "section" via GENERAL_MAP
         # "custom" is an unmapped string key — not copied when integer keys are present
         assert "custom" not in result
 
@@ -140,7 +140,7 @@ class TestRoverDispatcher:
         handler = AsyncMock()
         dispatcher.register_handler(5, handler)
 
-        fields = {0: 5, 1: 42, 2: "on"}
+        fields = {0: 5, 35: 42, 5: "on"}
         src = b"\x00" * 16
 
         await dispatcher.dispatch(src, fields)

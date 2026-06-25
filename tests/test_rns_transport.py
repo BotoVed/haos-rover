@@ -87,62 +87,89 @@ def _make_transport(
 class TestOutKeyMap:
     """Verify the outbound integer-key mapping table."""
 
-    def test_tp_maps_to_1(self):
-        assert _OUT_KEY_MAP["tp"] == 1
+    def test_tp_maps_to_0(self):
+        assert _OUT_KEY_MAP["tp"] == 0
 
-    def test_section_maps_to_2(self):
-        assert _OUT_KEY_MAP["section"] == 2
+    def test_section_maps_to_1(self):
+        assert _OUT_KEY_MAP["section"] == 1
 
-    def test_h_maps_to_3(self):
-        assert _OUT_KEY_MAP["h"] == 3
+    def test_h_maps_to_2(self):
+        assert _OUT_KEY_MAP["h"] == 2
 
-    def test_data_maps_to_4(self):
-        assert _OUT_KEY_MAP["data"] == 4
+    def test_data_maps_to_3(self):
+        assert _OUT_KEY_MAP["data"] == 3
 
-    def test_v_maps_to_5(self):
-        assert _OUT_KEY_MAP["v"] == 5
+    def test_v_maps_to_4(self):
+        assert _OUT_KEY_MAP["v"] == 4
 
-    def test_s_maps_to_6(self):
-        assert _OUT_KEY_MAP["s"] == 6
+    def test_s_maps_to_5(self):
+        assert _OUT_KEY_MAP["s"] == 5
 
-    def test_b_maps_to_7(self):
-        assert _OUT_KEY_MAP["b"] == 7
+    def test_b_maps_to_6(self):
+        assert _OUT_KEY_MAP["b"] == 6
 
-    def test_ct_maps_to_8(self):
-        assert _OUT_KEY_MAP["ct"] == 8
+    def test_ct_maps_to_7(self):
+        assert _OUT_KEY_MAP["ct"] == 7
 
-    def test_rgb_maps_to_9(self):
-        assert _OUT_KEY_MAP["rgb"] == 9
+    def test_rgb_maps_to_8(self):
+        assert _OUT_KEY_MAP["rgb"] == 8
 
-    def test_ef_maps_to_10(self):
-        assert _OUT_KEY_MAP["ef"] == 10
+    def test_ef_maps_to_9(self):
+        assert _OUT_KEY_MAP["ef"] == 9
 
-    def test_cv_maps_to_11(self):
-        assert _OUT_KEY_MAP["cv"] == 11
+    def test_cv_maps_to_10(self):
+        assert _OUT_KEY_MAP["cv"] == 10
 
-    def test_p_maps_to_12(self):
-        assert _OUT_KEY_MAP["p"] == 12
+    def test_p_maps_to_11(self):
+        assert _OUT_KEY_MAP["p"] == 11
 
-    def test_devices_maps_to_52(self):
-        assert _OUT_KEY_MAP["devices"] == 52
+    def test_devices_maps_to_56(self):
+        assert _OUT_KEY_MAP["devices"] == 56
 
-    def test_users_maps_to_53(self):
-        assert _OUT_KEY_MAP["users"] == 53
+    def test_users_maps_to_57(self):
+        assert _OUT_KEY_MAP["users"] == 57
 
-    def test_hash_maps_to_33(self):
-        assert _OUT_KEY_MAP["hash"] == 33
+    def test_hash_maps_to_37(self):
+        assert _OUT_KEY_MAP["hash"] == 37
 
-    def test_id_maps_to_31(self):
-        assert _OUT_KEY_MAP["id"] == 31
+    def test_id_maps_to_35(self):
+        assert _OUT_KEY_MAP["id"] == 35
 
-    def test_name_maps_to_32(self):
-        assert _OUT_KEY_MAP["name"] == 32
+    def test_name_maps_to_36(self):
+        assert _OUT_KEY_MAP["name"] == 36
 
-    def test_version_maps_to_41(self):
-        assert _OUT_KEY_MAP["version"] == 41
+    def test_version_maps_to_45(self):
+        assert _OUT_KEY_MAP["version"] == 45
 
-    def test_swing_v_maps_to_21(self):
-        assert _OUT_KEY_MAP["swing_v"] == 21
+    def test_swing_v_maps_to_20(self):
+        assert _OUT_KEY_MAP["swing_v"] == 20
+
+    def test_m_maps_to_30(self):
+        assert _OUT_KEY_MAP["m"] == 30
+
+    def test_a_maps_to_31(self):
+        assert _OUT_KEY_MAP["a"] == 31
+
+    def test_d_maps_to_32(self):
+        assert _OUT_KEY_MAP["d"] == 32
+
+    def test_reason_maps_to_34(self):
+        assert _OUT_KEY_MAP["reason"] == 34
+
+    def test_diffs_maps_to_33(self):
+        assert _OUT_KEY_MAP["diffs"] == 33
+
+    def test_sections_maps_to_60(self):
+        assert _OUT_KEY_MAP["sections"] == 60
+
+    def test_uid_maps_to_49(self):
+        assert _OUT_KEY_MAP["uid"] == 49
+
+    def test_dst_maps_to_50(self):
+        assert _OUT_KEY_MAP["dst"] == 50
+
+    def test_src_maps_to_51(self):
+        assert _OUT_KEY_MAP["src"] == 51
 
     def test_all_values_are_integers(self):
         for key, val in _OUT_KEY_MAP.items():
@@ -163,8 +190,8 @@ class TestToWire:
 
     def test_known_keys_map_to_integers(self):
         result = _to_wire({"tp": 9, "v": 2, "s": "hello"})
-        # tp→1, v→5, s→6
-        assert result == {1: 9, 5: 2, 6: "hello"}
+        # tp→0, v→4, s→5
+        assert result == {0: 9, 4: 2, 5: "hello"}
 
     def test_unknown_string_key_raises_value_error(self):
         """Unknown string keys are not in _OUT_KEY_MAP, so int() conversion
@@ -183,7 +210,7 @@ class TestToWire:
     def test_spot_check_10_entries(self):
         """Spot-check at least 10 known mappings end-to-end."""
         fields = {
-            "tp": 1, "v": 2, "s": 3, "b": 4, "ct": 5,
+            "tp": 9, "v": 2, "s": 3, "b": 4, "ct": 5,
             "rgb": 6, "ef": 7, "cv": 8, "p": 9, "ti": 10,
             "fan": 18, "preset": 19, "vol": 23,
         }
@@ -194,24 +221,112 @@ class TestToWire:
 
     def test_all_integer_keys_in_wire_output(self):
         """Every key in the wire output dict should be an integer."""
-        wire = _to_wire({"tp": 1, "v": 2, 42: "x"})
+        wire = _to_wire({"tp": 9, "v": 2, 42: "x"})
         for k in wire:
             assert isinstance(k, int), f"Wire key {k!r} is not an int"
 
     def test_value_preservation(self):
         """Values are passed through without transformation."""
         result = _to_wire({"tp": "string_val", "v": [1, 2, 3]})
-        assert result[1] == "string_val"
-        assert result[5] == [1, 2, 3]
+        assert result[0] == "string_val"
+        assert result[4] == [1, 2, 3]
 
     def test_none_value_preserved(self):
         result = _to_wire({"tp": None})
-        assert result[1] is None
+        assert result[0] is None
 
     def test_nested_dict_value_preserved(self):
         nested = {"inner": {"deep": True}}
         result = _to_wire({"data": nested})
-        assert result[4] == nested
+        assert result[3] == nested
+
+
+# ---------------------------------------------------------------------------
+# TestWireRoundTrip — round-trip _to_wire() → normalize()
+# ---------------------------------------------------------------------------
+
+class TestWireRoundTrip:
+    """Verify _to_wire() → normalize() round-trip for all 9 message types."""
+
+    def test_status_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 2, "data": [{"id": 1, "v": "on"}]})
+        tp, norm = normalize(wire)
+        assert tp == 2
+        assert norm["tp"] == 2
+        assert norm["data"] == [{"id": 1, "v": "on"}]
+
+    def test_push_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 3, "id": 1, "v": "on"})
+        tp, norm = normalize(wire)
+        assert tp == 3
+        assert norm["tp"] == 3
+        assert norm["id"] == 1
+        assert norm["v"] == "on"
+
+    def test_config_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 4, "section": "d", "hash": "78ab", "data": [{"id": 1}]})
+        tp, norm = normalize(wire)
+        assert tp == 4
+        assert norm["tp"] == 4
+        assert norm["section"] == "d"
+        assert norm["hash"] == "78ab"
+        assert norm["data"] == [{"id": 1}]
+
+    def test_cmd_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 5, "id": 1, "s": True})
+        tp, norm = normalize(wire)
+        assert tp == 5
+        assert norm["tp"] == 5
+        assert norm["id"] == 1
+        assert norm["s"] is True
+
+    def test_ping_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 6, "m": "ab12", "u": "ef34", "a": "cd56", "d": "78ab"})
+        tp, norm = normalize(wire)
+        assert tp == 6
+        assert norm["tp"] == 6
+        assert norm["m"] == "ab12"
+        assert norm["u"] == "ef34"
+        assert norm["a"] == "cd56"
+        assert norm["d"] == "78ab"
+
+    def test_pong_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 6, "m": "ab12", "u": "ef34", "a": "cd56", "d": "78ab", "sections": ["d"]})
+        tp, norm = normalize(wire)
+        assert tp == 6
+        assert norm["sections"] == ["d"]
+
+    def test_forbidden_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 7, "reason": "forbidden"})
+        tp, norm = normalize(wire)
+        assert tp == 7
+        assert norm["tp"] == 7
+        assert norm["reason"] == "forbidden"
+
+    def test_req_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 8, "sections": ["m", "a", "d"]})
+        tp, norm = normalize(wire)
+        assert tp == 8
+        assert norm["tp"] == 8
+        assert norm["sections"] == ["m", "a", "d"]
+
+    def test_register_roundtrip(self):
+        from custom_components.rover.dispatcher import normalize
+        wire = _to_wire({"tp": 9, "uid": "a1b2", "dst": "f6be97", "name": "Test Phone"})
+        tp, norm = normalize(wire)
+        assert tp == 9
+        assert norm["tp"] == 9
+        assert norm["uid"] == "a1b2"
+        assert norm["dst"] == "f6be97"
+        assert norm["name"] == "Test Phone"
 
 
 # ---------------------------------------------------------------------------
@@ -540,7 +655,7 @@ class TestSend:
         await tr.send("ab" * 16, {"tp": 5, "v": 1})
 
         # msg.fields should be the wire-format dict (integer keys)
-        assert msg_instance.fields == {1: 5, 5: 1}
+        assert msg_instance.fields == {0: 5, 4: 1}
 
     @pytest.mark.asyncio
     async def test_recall_raises_propagates(self):

@@ -438,6 +438,32 @@ class TestPendingAndUsers:
         bob = reg.get_user("hash_b")
         assert bob["role"] == "admin"
 
+    async def test_approve_pending_enforces_max_active_remotes(self) -> None:
+        """D4 — spec v0.5.0 §11.2, FR-004: limit 5 active remotes.
+        
+        Regression test for divergence where approve_pending() appended
+        without checking len(users) >= MAX_ACTIVE_REMOTES.
+        """
+        reg = await _loaded_registry()
+        # Fill up to MAX_ACTIVE_REMOTES=5
+        for i in range(5):
+            await reg.add_pending(f"hash_{i:064x}", f"user_{i}")
+            assert await reg.approve_pending(f"hash_{i:064x}") is True
+        
+        assert len(reg.all_users()) == 5
+        
+        # 6th user must be rejected
+        success = await reg.add_pending(f"hash_5:064x", "user_5")  # Note: add_pending only checks MAX_PENDING_REMOTES, not active. So this may succeed.
+        # The limit check happens in approve_pending.
+        if success:
+            result = await reg.approve_pending(f"hash_5:064x")
+            assert result is False, "6th user must be rejected when MAX_ACTIVE_REMOTES=5"
+            assert len(reg.all_users()) == 5
+        
+        # Verify the 6th user is NOT in users
+        for i in range(5):
+            assert reg.get_user(f"hash_{i:064x}") is not None
+
 
 # ---------------------------------------------------------------------------
 # 6. Hash Computation

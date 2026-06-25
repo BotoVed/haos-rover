@@ -52,6 +52,7 @@ def mock_registry():
     # These are awaited in _handle_register after the bug fix
     registry.add_pending = AsyncMock()
     registry.approve_pending = AsyncMock()
+    registry.deny_pending = AsyncMock()
     registry.get_hashes.return_value = {
         "m": "0000",
         "u": "0000",
@@ -764,6 +765,37 @@ class TestRegister:
         )
 
         mock_registry.add_pending.assert_called_once_with("01020304", "Alice")
+
+    async def test_register_active_limit_sends_forbidden_with_specific_reason(
+        self, handlers, mock_registry, mock_transport
+    ):
+        """When MAX_ACTIVE_REMOTES is reached, REGISTER must respond with
+        FORBIDDEN and reason='active_limit_exceeded'."""
+        # Pre-populate 5 active users
+        mock_registry.all_users.return_value = [
+            {"hash": f"hash_{i}", "name": f"user_{i}", "role": "owner"} for i in range(5)
+        ]
+        
+        # Set up a fresh QR token
+        mock_registry.consume_qr_token.return_value = True
+        
+        # add_pending succeeds (pending limit not reached)
+        mock_registry.add_pending.return_value = True
+        
+        # approve_pending fails because active limit reached
+        mock_registry.approve_pending.return_value = False
+        
+        # deny_pending succeeds when cleaning up
+        mock_registry.deny_pending.return_value = True
+
+        await handlers._handle_register(
+            b"\xaa\xbb\xcc\xdd", {"uid": "test_token_abc", "name": "Sixth Client"}
+        )
+
+        # Verify FORBIDDEN was sent with reason="active_limit_exceeded"
+        mock_transport.send.assert_called_once_with(
+            "aabbccdd", {"tp": TP_FORBIDDEN, "reason": "active_limit_exceeded"}
+        )
 
 
 # =========================================================================

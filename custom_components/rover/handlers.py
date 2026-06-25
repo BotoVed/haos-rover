@@ -14,6 +14,7 @@ from .const import (
     TP_CONFIG,
     TP_STATUS,
     LOGGER_HND,
+    MAX_ACTIVE_REMOTES,
 )
 from .commands import build_service_call
 from .state_extractor import extract_state
@@ -185,7 +186,16 @@ class RoverHandlers:
             return
 
         if not await self._registry.approve_pending(src_hash):
-            await self._send_forbidden(src_hash, "approval_failed")
+            # Distinguish limit from other failures
+            users = self._registry.all_users()
+            if len(users) >= MAX_ACTIVE_REMOTES:
+                # Clean up the pending entry we just added
+                await self._registry.deny_pending(src_hash)
+                await self._send_forbidden(src_hash, "active_limit_exceeded")
+            else:
+                # Unexpected approval failure
+                await self._registry.deny_pending(src_hash)
+                await self._send_forbidden(src_hash, "approval_failed")
             return
 
         for section in ["m", "u", "a", "d"]:

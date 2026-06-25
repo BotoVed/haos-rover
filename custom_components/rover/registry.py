@@ -12,6 +12,7 @@ from .const import (
     DEFAULT_TCP_PORT,
     IDENTITY_HASH_LEN,
     LOGGER_REG,
+    MAX_ACTIVE_REMOTES,
     MAX_PENDING_REMOTES,
     ROLE_OWNER,
     ROLE_REGULAR,
@@ -107,6 +108,16 @@ class RoverRegistry:
     def set_qr_token(self, token: str) -> None:
         """Set QR auth token."""
         self._qr_token = token
+
+    def generate_qr_token(self) -> str:
+        """Generate and store a new one-time QR token.
+        
+        Returns 4 hex characters per spec v0.5.0 §13 (QR_TOKEN_LEN=4).
+        Overwrites any previous token (single-use, one active at a time).
+        """
+        import secrets
+        self._qr_token = secrets.token_hex(2)  # 2 bytes = 4 hex chars
+        return self._qr_token
 
     def consume_qr_token(self, token: str) -> bool:
         """Consume QR token if it matches."""
@@ -364,7 +375,17 @@ class RoverRegistry:
 
     # Users section
     async def approve_pending(self, identity_hash: str, role: str = ROLE_REGULAR) -> bool:
-        """Approve a pending remote."""
+        """Approve a pending remote.
+
+        Enforces MAX_ACTIVE_REMOTES=5 limit (spec v0.5.0 §11.2, FR-004).
+        Returns False if the limit is exceeded.
+        """
+        if len(self._data["users"]) >= MAX_ACTIVE_REMOTES:
+            _LOGGER.warning(
+                "MUTATION approve_pending hash=%s: REJECTED — active limit reached (%d/%d)",
+                identity_hash[:8], len(self._data["users"]), MAX_ACTIVE_REMOTES,
+            )
+            return False
         for i, pending in enumerate(self._data["pending"]):
             if pending["hash"] == identity_hash:
                 user = {

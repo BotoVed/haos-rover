@@ -774,6 +774,18 @@ class TestAsyncStepConfig:
         self, flow, mock_registry
     ) -> None:
         """Placeholders should include QR markdown, identity, payload, and hashes."""
+        # Mock registry methods used by async_step_config
+        mock_registry.get_meta = MagicMock(return_value={
+            "server_name": "Test Hub",
+            "tcp_port": 4242,
+            "local_ip": "",
+        })
+        mock_registry.generate_qr_token = MagicMock(return_value="abcd")
+        # Mock transport with get_public_key_base64
+        mock_transport = MagicMock()
+        mock_transport.get_public_key_base64 = MagicMock(return_value="BASE64PUBKEY")
+        flow.config_entry.runtime_data.transport = mock_transport
+        
         result = await flow.async_step_config()
         assert result["type"] == "form"
         assert result["step_id"] == "config"
@@ -787,8 +799,8 @@ class TestAsyncStepConfig:
         assert placeholders["identity"] == "aabbccdd00112233"
         # Payload JSON
         payload = json.loads(placeholders["payload"])
-        assert payload["v"] == QR_FORMAT_VERSION
-        assert payload["dst"] == "aabbccdd00112233"
+        assert payload["rvr"]["fmt"] == QR_FORMAT_VERSION
+        assert payload["rvr"]["dst"] == "aabbccdd00112233"
         # Section hashes
         assert placeholders["hash_m"] == "abcd"
         assert placeholders["hash_u"] == "ef01"
@@ -805,6 +817,15 @@ class TestAsyncStepConfig:
         self, flow, mock_runtime
     ) -> None:
         mock_runtime.identity_hash = None
+        # Mock registry methods used by async_step_config
+        mock_runtime.registry.get_meta = MagicMock(return_value={
+            "server_name": "Test Hub",
+            "tcp_port": 4242,
+            "local_ip": "",
+        })
+        mock_runtime.registry.generate_qr_token = MagicMock(return_value="abcd")
+        mock_runtime.transport = MagicMock()
+        mock_runtime.transport.get_public_key_base64 = MagicMock(return_value="BASE64PUBKEY")
         result = await flow.async_step_config()
         placeholders = result.get("description_placeholders", {})
         assert placeholders["identity"] == "unknown"
@@ -813,6 +834,15 @@ class TestAsyncStepConfig:
         self, flow, mock_runtime
     ) -> None:
         mock_runtime.identity_hash = ""
+        # Mock registry methods used by async_step_config
+        mock_runtime.registry.get_meta = MagicMock(return_value={
+            "server_name": "Test Hub",
+            "tcp_port": 4242,
+            "local_ip": "",
+        })
+        mock_runtime.registry.generate_qr_token = MagicMock(return_value="abcd")
+        mock_runtime.transport = MagicMock()
+        mock_runtime.transport.get_public_key_base64 = MagicMock(return_value="BASE64PUBKEY")
         result = await flow.async_step_config()
         placeholders = result.get("description_placeholders", {})
         assert placeholders["identity"] == "unknown"
@@ -821,6 +851,15 @@ class TestAsyncStepConfig:
         self, flow
     ) -> None:
         """The QR URL should URL-encode the JSON payload."""
+        # Mock registry methods used by async_step_config
+        flow.config_entry.runtime_data.registry.get_meta = MagicMock(return_value={
+            "server_name": "Test Hub",
+            "tcp_port": 4242,
+            "local_ip": "",
+        })
+        flow.config_entry.runtime_data.registry.generate_qr_token = MagicMock(return_value="abcd")
+        flow.config_entry.runtime_data.transport = MagicMock()
+        flow.config_entry.runtime_data.transport.get_public_key_base64 = MagicMock(return_value="BASE64PUBKEY")
         result = await flow.async_step_config()
         placeholders = result.get("description_placeholders", {})
         assert "%7B" in placeholders["qr"] or "{" not in placeholders["qr"]
@@ -837,6 +876,38 @@ class TestAsyncStepConfig:
         result = await flow.async_step_config()
         assert result["type"] == "abort"
         assert result["reason"] == "not_loaded"
+
+    async def test_qr_payload_matches_spec_v0_5_0(
+        self, flow, mock_registry, mock_runtime
+    ) -> None:
+        """D3 — spec v0.5.0 §4.2: QR payload must have rvr wrapper with 6 fields."""
+        # Pre-populate meta
+        mock_registry.get_meta = MagicMock(return_value={
+            "server_name": "Test Hub",
+            "tcp_port": 4242,
+            "local_ip": "192.168.1.114",
+        })
+        mock_registry.generate_qr_token = MagicMock(return_value="abcd")
+        # Mock transport with get_public_key_base64
+        mock_transport = MagicMock()
+        mock_transport.get_public_key_base64 = MagicMock(return_value="test_pubkey_base64")
+        mock_runtime.transport = mock_transport
+        
+        # Call config step
+        result = await flow.async_step_config()
+        placeholders = result.get("description_placeholders", {})
+        
+        # Verify qr_json contains {"rvr": {"fmt": 2, "dst": "...", "nm": "Test Hub", "pk": "...", "tcp": "...", "uid": "..."}}
+        payload = json.loads(placeholders["payload"])
+        assert "rvr" in payload
+        rvr = payload["rvr"]
+        assert rvr["fmt"] == QR_FORMAT_VERSION
+        assert rvr["dst"] == "aabbccdd00112233"
+        assert rvr["nm"] == "Test Hub"
+        assert rvr["pk"] == "test_pubkey_base64"
+        assert rvr["tcp"] == "192.168.1.114:4242"
+        assert len(rvr["uid"]) == 4  # 4 hex chars per spec
+        assert len(rvr) == 6  # Ensure exactly 6 fields in rvr
 
 
 # =========================================================================

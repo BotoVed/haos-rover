@@ -15,22 +15,23 @@ _GENERAL_MAP: dict[int, str] = {
 }
 
 _TP_MAPS: dict[int, dict[int, str]] = {
+    # All types use the same flat key space as _OUT_KEY_MAP
     # STATUS (tp=2) — snapshot response
-    2: {1: "v", 2: "s", 3: "b", 4: "ct", 5: "rgb"},
+    2: {4: "v", 5: "s", 6: "b", 7: "ct", 8: "rgb"},
     # PUSH (tp=3) — state change  
-    3: {1: "id", 2: "v", 3: "b", 4: "ct", 5: "rgb"},
+    3: {35: "id", 4: "v", 6: "b", 7: "ct", 8: "rgb"},
     # CONFIG (tp=4) — section contents
-    4: {1: "section", 2: "hash", 3: "data"},
+    4: {1: "section", 37: "hash", 3: "data"},
     # CMD (tp=5) — device command
-    5: {1: "id", 2: "s", 3: "b", 4: "ct", 5: "rgb"},
-    # PING/PONG (tp=6)
-    6: {1: "m", 2: "u", 3: "a", 4: "d", 5: "sections"},
+    5: {35: "id", 5: "s", 6: "b", 7: "ct", 8: "rgb"},
+    # PING/PONG (tp=6) — section hashes
+    6: {30: "m", 28: "u", 31: "a", 32: "d", 33: "diffs", 60: "sections"},
     # FORBIDDEN (tp=7)
-    7: {1: "reason"},
+    7: {34: "reason"},
     # REQ (tp=8)
-    8: {1: "sections", 2: "reason"},
+    8: {60: "sections", 34: "reason"},
     # REGISTER (tp=9)
-    9: {1: "uid", 2: "dst", 3: "name"},
+    9: {49: "uid", 50: "dst", 36: "name"},
 }
 
 _LOGGER = logging.getLogger(LOGGER_HND)

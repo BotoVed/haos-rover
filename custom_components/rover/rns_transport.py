@@ -33,34 +33,38 @@ _LXMF_STATE: dict[str, Any] | None = None
 _RNS_INSTANCE_HASH: str | None = None  # Track which Reticulum instance this belongs to
 
 _OUT_KEY_MAP: dict[str, int] = {
-    # Message envelope
-    "tp": 1, "section": 2, "h": 3, "data": 4,
-    # State/command fields  
-    "v": 5, "s": 6, "b": 7, "ct": 8, "rgb": 9, "ef": 10,
-    "cv": 11, "p": 12, "ti": 13,
-    "hvac": 14, "t": 15, "th": 16, "tl": 17, "fan": 18,
-    "preset": 19, "swing_h": 20, "swing_v": 21,
-    "ms": 22, "vol": 23, "seek": 24,
-    "al": 25, "sp": 26, "osc": 27, "dir": 28,
-    "u": 29, "tc": 30,
-    # Config section fields
-    "id": 31, "name": 32, "hash": 33, "role": 34,
-    "type": 35, "entity_id": 36, "short_id": 37,
-    "area_id": 38, "enabled": 39,
-    "server_name": 40, "version": 41, "tcp_port": 42,
-    "local_ip": 43, "ssid": 44,
-    # QR/registration
-    "uid": 45, "dst": 46, "src": 47,
-    "qr_host": 48, "qr_port": 49, "qr_identity": 50, "qr_version": 51,
-    # Config section containers
-    "devices": 52, "users": 53, "areas": 54, "meta": 55,
-    "sections": 56, "pending": 57, "requested_at": 58,
-    # Media
-    "title": 59, "artist": 60, "album": 61, "dur": 62, "pos": 63, "muted": 64,
-    # Status
-    "identity_hash": 65, "dt": 66, "st": 67, "br": 68, "co": 69, "md": 70,
-    # Misc
-    "device_type": 71, "msg": 72,
+    # Message envelope — spec v0.5.0 §3.8: envelope starts at key 0
+    "tp": 0, "section": 1, "h": 2, "data": 3,
+    # State/command fields (4..29)
+    "v": 4, "s": 5, "b": 6, "ct": 7, "rgb": 8, "ef": 9,
+    "cv": 10, "p": 11, "ti": 12,
+    "hvac": 13, "t": 14, "th": 15, "tl": 16, "fan": 17,
+    "preset": 18, "swing_h": 19, "swing_v": 20,
+    "ms": 21, "vol": 22, "seek": 23,
+    "al": 24, "sp": 25, "osc": 26, "dir": 27,
+    "u": 28, "tc": 29,
+    # PING/PONG hashes (30..33) — formerly on inbound only
+    "m": 30, "a": 31, "d": 32, "diffs": 33,
+    # FORBIDDEN/REQ (34)
+    "reason": 34,
+    # Config section fields (35..46)
+    "id": 35, "name": 36, "hash": 37, "role": 38,
+    "type": 39, "entity_id": 40, "short_id": 41,
+    "area_id": 42, "enabled": 43,
+    "server_name": 44, "version": 45, "tcp_port": 46,
+    "local_ip": 47, "ssid": 48,
+    # QR/registration (49..58)
+    "uid": 49, "dst": 50, "src": 51,
+    "qr_host": 52, "qr_port": 53, "qr_identity": 54, "qr_version": 55,
+    # Config section containers (56..61)
+    "devices": 56, "users": 57, "areas": 58, "meta": 59,
+    "sections": 60, "pending": 61, "requested_at": 62,
+    # Media (63..68)
+    "title": 63, "artist": 64, "album": 65, "dur": 66, "pos": 67, "muted": 68,
+    # Status (69..74)
+    "identity_hash": 69, "dt": 70, "st": 71, "br": 72, "co": 73, "md": 74,
+    # Misc (75..76)
+    "device_type": 75, "msg": 76,
 }
 
 
@@ -317,3 +321,16 @@ class RoverTransport:
 
     def set_dispatcher_cb(self, callback: Callable[[bytes, dict], None]) -> None:
         self._on_message = callback
+
+    def get_public_key_base64(self) -> str:
+        """Return the Reticulum identity's public key as base64 string.
+        
+        Used for embedding in QR codes per spec v0.5.0 §4.2.
+        Returns empty string if identity not yet initialized.
+        """
+        if self._identity is None:
+            return ""
+        import base64
+        # RNS Identity has .get_public_key() returning bytes
+        pk_bytes = self._identity.get_public_key()
+        return base64.b64encode(pk_bytes).decode("ascii")

@@ -354,7 +354,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_config(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Show config and QR code."""
+        """Show config and QR code per spec v0.5.0 §4.2."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         if runtime is None or runtime.registry is None:
             return self.async_abort(reason="not_loaded")
@@ -362,10 +362,31 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         if user_input is not None:
             return await self.async_step_init()
 
-        # Generate QR payload
+        # Generate fresh QR token (one-time, one active)
+        qr_token = runtime.registry.generate_qr_token()
+        
+        # Get server name from meta
+        meta = runtime.registry.get_meta()
+        server_name = meta.get("server_name", "Rover Hub")
+        
+        # Get public key from transport
+        pk_base64 = runtime.transport.get_public_key_base64() if runtime.transport else ""
+        
+        # Build TCP endpoint
+        tcp_port = meta.get("tcp_port", 4242)
+        local_ip = meta.get("local_ip", "")
+        tcp_endpoint = f"{local_ip}:{tcp_port}" if local_ip else ""
+        
+        # QR payload per spec v0.5.0 §4.2
         qr_data = {
-            "v": QR_FORMAT_VERSION,
-            "dst": runtime.identity_hash,
+            "rvr": {
+                "fmt": QR_FORMAT_VERSION,
+                "dst": runtime.identity_hash or "",
+                "nm": server_name,
+                "pk": pk_base64,
+                "tcp": tcp_endpoint,
+                "uid": qr_token,
+            }
         }
         qr_json = json.dumps(qr_data, separators=(",", ":"))
 
@@ -385,6 +406,10 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 "qr": f"![QR]({qr_url})",
                 "identity": runtime.identity_hash or "unknown",
                 "payload": qr_json,
+                "server_name": server_name,
+                "pk": pk_base64[:32] + "..." if len(pk_base64) > 32 else pk_base64,
+                "tcp": tcp_endpoint or "(not set)",
+                "uid": qr_token,
                 "hash_m": hashes.get("m", ""),
                 "hash_u": hashes.get("u", ""),
                 "hash_a": hashes.get("a", ""),
