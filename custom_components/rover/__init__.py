@@ -1,7 +1,7 @@
 """Rover — Remote Over Radio for Home Assistant."""
 from __future__ import annotations
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 import logging
 from typing import Callable
@@ -72,6 +72,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass, runtime.registry, runtime.transport,
     )
 
+    # Set runtime_data early so async_unload_entry can clean up
+    # even if transport start throws
+    entry.runtime_data = runtime
+
     # 6. Start components in dependency order
     identity_hash = await runtime.transport.async_start()
     runtime.identity_hash = identity_hash
@@ -88,7 +92,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # 8. Debug services
     await async_register_services(hass, runtime)
 
-    entry.runtime_data = runtime
     _LOGGER.info("Rover %s setup complete (identity=%s...)", __version__, identity_hash[:16])
     return True
 

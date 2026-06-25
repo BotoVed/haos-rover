@@ -26,6 +26,7 @@ from .const import (
 )
 from .registry import RoverRegistry
 
+_RNS_INITIALIZED = False
 
 _OUT_KEY_MAP: dict[str, int] = {
     # Message envelope
@@ -86,12 +87,34 @@ class RoverTransport:
         self._shutdown = False
 
     async def async_start(self) -> str:
-        """Initialize RNS/LXMF transport in executor thread."""
+        """Initialize RNS/LXMF transport. Cleanly restarts if already running."""
 
         def _init() -> str:
+            import signal as signal_module
+
+            # If Reticulum already running — stop it first (clean state for reload)
+            if hasattr(RNS.Reticulum, "get_instance"):
+                existing = RNS.Reticulum.get_instance()
+            else:
+                existing = getattr(RNS.Reticulum, "_Reticulum__instance", None)
+
+            if existing is not None:
+                self._logger.warning("RNS already running on reload — stopping it first")
+                try:
+                    if RNS.Transport.interfaces:
+                        RNS.Transport.detach_interfaces()
+                except Exception:
+                    pass
+                try:
+                    existing.__class__.__instance = None  # reset singleton
+                except Exception:
+                    pass
+                # Force reset internal singleton
+                RNS.Reticulum._Reticulum__instance = None
+
             # Save and monkey-patch signal.signal (RNS init requires main thread)
-            _orig_signal = signal.signal
-            signal.signal = lambda signum, handler: None  # type: ignore[assignment]
+            _orig_signal = signal_module.signal
+            signal_module.signal = lambda signum, handler: None
 
             try:
                 # Create config dir
@@ -123,13 +146,13 @@ class RoverTransport:
                         f.write("    listen_ip = 0.0.0.0\n")
                         f.write(f"    listen_port = {self._tcp_port}\n")
 
-                # Initialize RNS (singleton — may already be running)
-                try:
-                    RNS.Reticulum(configdir=self._config_dir)
-                except OSError:
-                    self._logger.warning("RNS already running, reusing existing instance")
+                # Initialize RNS (now should be clean state)
+                RNS.Reticulum(configdir=self._config_dir)
                 RNS.loglevel = RNS.LOG_EXTREME
                 RNS.logdest = RNS.LOG_STDOUT
+
+                global _RNS_INITIALIZED
+                _RNS_INITIALIZED = True
 
                 # Create LXMF router
                 storage_path = os.path.join(self._config_dir, "lxmf_storage")
@@ -149,14 +172,13 @@ class RoverTransport:
 
                 return self._identity.hash.hex()
             finally:
-                # Always restore original signal handler
-                signal.signal = _orig_signal
+                signal_module.signal = _orig_signal
 
-        # Run ALL synchronous init in executor thread
+        # Run synchronous init in executor (with signal patch)
         identity_hash = await self._hass.async_add_executor_job(_init)
         self._identity_hash = identity_hash
 
-        # Schedule async periodic announce (this is safe for event loop)
+        # Schedule async periodic announce
         asyncio.ensure_future(self._periodic_path_announces())
 
         return identity_hash
@@ -240,17 +262,32 @@ class RoverTransport:
         self._logger.warning("Message delivery failed: %s", msg.hash.hex())
 
     async def shutdown(self) -> None:
+        """Shutdown transport. On full integration unload, also stop Reticulum."""
         self._shutdown = True
 
         def _do_shutdown() -> None:
+            # Stop LXMF router first
             if self._router:
                 try:
                     self._router.stop()
                 except Exception:
                     pass
+                self._router = None
+
+            # Detach Reticulum interfaces
+            try:
+                if RNS.Transport.interfaces:
+                    RNS.Transport.detach_interfaces()
+            except Exception:
+                pass
+
+            # Reset Reticulum singleton so next reload starts fresh
+            try:
+                RNS.Reticulum._Reticulum__instance = None
+            except Exception:
+                pass
 
         await self._hass.async_add_executor_job(_do_shutdown)
-        self._router = None
         self._identity = None
         self._delivery_dest = None
         self._logger.info("Transport shutdown complete")
