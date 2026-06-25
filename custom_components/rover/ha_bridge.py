@@ -110,7 +110,7 @@ class RoverHABridge:
             state_fields = extract_state(
                 new_state.state, new_state.attributes, device_type
             )
-        except ValueError:
+        except (ValueError, TypeError):
             self._logger.exception(
                 "Failed to extract state for %s (type=%s)", entity_id, device_type
             )

@@ -91,46 +91,22 @@ class RoverTransport:
 
         def _init() -> str:
             import signal as signal_module
-
-            # If Reticulum already running — stop it first (clean state for reload)
-            if hasattr(RNS.Reticulum, "get_instance"):
-                existing = RNS.Reticulum.get_instance()
-            else:
-                existing = getattr(RNS.Reticulum, "_Reticulum__instance", None)
-
+            
+            # Check if Reticulum is already initialized
+            existing = getattr(RNS.Reticulum, "_Reticulum__instance", None)
+            
             if existing is not None:
-                self._logger.warning("RNS already running on reload — stopping it first")
+                self._logger.warning("RNS already initialized on reload — reusing instance")
+            else:
+                # First-time init or after complete shutdown
+                # Detach any stale interfaces first
                 try:
-                    if RNS.Transport.interfaces:
+                    if hasattr(RNS.Transport, 'interfaces') and RNS.Transport.interfaces:
                         RNS.Transport.detach_interfaces()
                 except Exception:
                     pass
-                try:
-                    existing.__class__.__instance = None  # reset singleton
-                except Exception:
-                    pass
-                # Force reset internal singleton
-                RNS.Reticulum._Reticulum__instance = None
 
-            # ALWAYS clean up Transport destinations even if no Reticulum instance detected
-            # (Transport module state persists across reloads after __instance reset)
-            try:
-                if hasattr(RNS.Transport, 'path_request_destination'):
-                    RNS.Transport.path_request_destination = None
-            except Exception:
-                pass
-            try:
-                if hasattr(RNS.Transport, 'link_establishment_destination'):
-                    RNS.Transport.link_establishment_destination = None
-            except Exception:
-                pass
-            try:
-                if hasattr(RNS.Transport, '_destinations'):
-                    RNS.Transport._destinations.clear()
-            except Exception:
-                pass
-
-            # Save and monkey-patch signal.signal (RNS init requires main thread)
+            # Save and monkey-patch signal.signal (needed for both first-time and reuse cases)
             _orig_signal = signal_module.signal
             signal_module.signal = lambda signum, handler: None
 
@@ -146,7 +122,7 @@ class RoverTransport:
                     self._identity = RNS.Identity()
                     self._identity.to_file(identity_path)
 
-                # Write RNS config (ConfigObj INI format)
+                # Write RNS config (ConfigObj INI format) — needed only for first init
                 config_path = os.path.join(self._config_dir, "config")
                 with open(config_path, "w") as f:
                     f.write("[reticulum]\n")
@@ -164,15 +140,18 @@ class RoverTransport:
                         f.write("    listen_ip = 0.0.0.0\n")
                         f.write(f"    listen_port = {self._tcp_port}\n")
 
-                # Initialize RNS (now should be clean state)
-                RNS.Reticulum(configdir=self._config_dir)
-                RNS.loglevel = RNS.LOG_EXTREME
-                RNS.logdest = RNS.LOG_STDOUT
+                # Initialize RNS only if not already running
+                if existing is None:
+                    RNS.Reticulum(configdir=self._config_dir)
+                    RNS.loglevel = RNS.LOG_EXTREME
+                    RNS.logdest = RNS.LOG_STDOUT
+                else:
+                    self._logger.info("Skipping Reticulum init — instance already exists")
 
                 global _RNS_INITIALIZED
                 _RNS_INITIALIZED = True
 
-                # Create LXMF router
+                # Create LXMF router (always needed, even on reload)
                 storage_path = os.path.join(self._config_dir, "lxmf_storage")
                 os.makedirs(storage_path, exist_ok=True)
                 self._router = LXMF.LXMRouter(
@@ -296,29 +275,6 @@ class RoverTransport:
             try:
                 if RNS.Transport.interfaces:
                     RNS.Transport.detach_interfaces()
-            except Exception:
-                pass
-
-            # Reset Reticulum singleton so next reload starts fresh
-            try:
-                RNS.Reticulum._Reticulum__instance = None
-            except Exception:
-                pass
-
-            # Clear Transport destinations for clean re-init on reload
-            try:
-                if hasattr(RNS.Transport, 'path_request_destination'):
-                    RNS.Transport.path_request_destination = None
-            except Exception:
-                pass
-            try:
-                if hasattr(RNS.Transport, 'link_establishment_destination'):
-                    RNS.Transport.link_establishment_destination = None
-            except Exception:
-                pass
-            try:
-                if hasattr(RNS.Transport, '_destinations'):
-                    RNS.Transport._destinations.clear()
             except Exception:
                 pass
 

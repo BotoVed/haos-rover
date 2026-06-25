@@ -28,7 +28,7 @@ def extract_state(state: str, attributes: dict | None, device_type: str) -> dict
 
     elif device_type == "LT":
         if attributes:
-            if "brightness" in attributes:
+            if attributes.get("brightness") is not None:
                 result["b"] = round(attributes["brightness"] * 100 / 255)
             if "color_temp_kelvin" in attributes:
                 result["ct"] = attributes["color_temp_kelvin"]
