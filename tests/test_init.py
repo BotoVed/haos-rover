@@ -13,7 +13,7 @@ from custom_components.rover.const import DOMAIN
 
 class TestVersion:
     def test_version_value(self) -> None:
-        assert init_mod.__version__ == "0.0.2"
+        assert init_mod.__version__ == "0.2.8"
 
     def test_version_is_string(self) -> None:
         assert isinstance(init_mod.__version__, str)
@@ -253,17 +253,21 @@ class TestAsyncSetupEntry:
 
     @pytest.mark.asyncio
     async def test_ha_stop_shutdown_triggers_unload(self, mock_components) -> None:
-        """The _shutdown closure registered via async_listen_once calls async_unload_entry."""
+        """The _shutdown closure registered via async_listen_once performs cleanup."""
         mock_hass = MagicMock()
         mock_entry = MagicMock()
-        with patch.object(init_mod, "async_unload_entry") as mock_unload:
-            mock_unload = AsyncMock()
-            with patch.object(init_mod, "async_unload_entry", mock_unload):
-                await init_mod.async_setup_entry(mock_hass, mock_entry)
-                # Extract the _shutdown callback that was registered
-                _shutdown_cb = mock_hass.bus.async_listen_once.call_args[0][1]
-                await _shutdown_cb(MagicMock())
-                mock_unload.assert_awaited_once_with(mock_hass, mock_entry)
+        mock_entry.entry_id = "test_entry_123"
+        await init_mod.async_setup_entry(mock_hass, mock_entry)
+        # Extract the _shutdown callback that was registered
+        _shutdown_cb = mock_hass.bus.async_listen_once.call_args[0][1]
+        await _shutdown_cb(MagicMock())
+        # Verify _shutdown actually does what it does (not calling async_unload_entry)
+        mock_components["transp"].shutdown.assert_awaited_once_with(full_teardown=True)
+        mock_components["bridge"].async_stop.assert_awaited_once()
+        init_mod.async_unregister_services.assert_called_once_with(mock_hass)
+        mock_entry.runtime_data._unsub_stop.assert_called_once()
+        mock_hass.data.setdefault.assert_called_once_with(DOMAIN, {})
+        mock_hass.data.setdefault.return_value.pop.assert_called_once_with("test_entry_123", None)
 
     @pytest.mark.asyncio
     async def test_construction_order(self, mock_components) -> None:
@@ -463,7 +467,7 @@ class TestManifest:
 
     def test_version_matches(self) -> None:
         manifest = json.loads(_MANIFEST_PATH.read_text())
-        assert manifest["version"] == "0.0.2"
+        assert manifest["version"] == "0.2.8"
 
     def test_domain_matches(self) -> None:
         manifest = json.loads(_MANIFEST_PATH.read_text())
