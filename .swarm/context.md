@@ -49,30 +49,30 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 799 | 799 | 0 | 585ms |
-| bash | 572 | 572 | 0 | 1262ms |
-| edit | 221 | 221 | 0 | 27ms |
-| glob | 166 | 166 | 0 | 626ms |
-| grep | 121 | 121 | 0 | 33ms |
-| task | 92 | 92 | 0 | 91665ms |
+| read | 800 | 800 | 0 | 584ms |
+| bash | 583 | 583 | 0 | 1343ms |
+| edit | 223 | 223 | 0 | 27ms |
+| glob | 167 | 167 | 0 | 622ms |
+| grep | 122 | 122 | 0 | 77ms |
+| task | 93 | 93 | 0 | 90857ms |
 | write | 70 | 70 | 0 | 21ms |
 | syntax_check | 46 | 46 | 0 | 49ms |
 | declare_scope | 28 | 28 | 0 | 5ms |
 | search | 28 | 28 | 0 | 30ms |
 | update_task_status | 20 | 20 | 0 | 33ms |
 | summarize_work | 18 | 18 | 0 | 53ms |
-| retrieve_summary | 15 | 15 | 0 | 5ms |
+| retrieve_summary | 16 | 16 | 0 | 5ms |
 | test_runner | 13 | 13 | 0 | 754ms |
 | todo_extract | 12 | 12 | 0 | 3ms |
 | swarm_command | 11 | 11 | 0 | 44ms |
 | diff | 11 | 11 | 0 | 40ms |
 | knowledge_add | 11 | 11 | 0 | 170ms |
 | web_search | 10 | 10 | 0 | 5ms |
+| webfetch | 7 | 7 | 0 | 708ms |
 | skill | 6 | 6 | 0 | 44ms |
 | placeholder_scan | 6 | 6 | 0 | 54ms |
 | get_approved_plan | 5 | 5 | 0 | 4ms |
 | check_gate_status | 5 | 5 | 0 | 42ms |
-| webfetch | 5 | 5 | 0 | 373ms |
 | save_plan | 4 | 4 | 0 | 132ms |
 | set_qa_gates | 3 | 3 | 0 | 47ms |
 | build_check | 3 | 3 | 0 | 77ms |

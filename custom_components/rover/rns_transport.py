@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import signal
 from typing import Any, Callable
 
 import RNS
@@ -88,60 +89,68 @@ class RoverTransport:
         """Initialize RNS/LXMF transport in executor thread."""
 
         def _init() -> str:
-            # Create config dir
-            os.makedirs(self._config_dir, exist_ok=True)
+            # Save and monkey-patch signal.signal (RNS init requires main thread)
+            _orig_signal = signal.signal
+            signal.signal = lambda signum, handler: None  # type: ignore[assignment]
 
-            # Load/create identity
-            identity_path = os.path.join(self._config_dir, "identity")
-            if os.path.exists(identity_path):
-                self._identity = RNS.Identity.from_file(identity_path)
-            else:
-                self._identity = RNS.Identity()
-                self._identity.to_file(identity_path)
-
-            # Write RNS config (ConfigObj INI format)
-            config_path = os.path.join(self._config_dir, "config")
-            with open(config_path, "w") as f:
-                f.write("[reticulum]\n")
-                f.write("enable_transport = True\n")
-                f.write("share_instance = Yes\n")
-                f.write("\n")
-                f.write("[logging]\n")
-                f.write("loglevel = 3\n")
-                if self._tcp_port > 0:
-                    f.write("\n")
-                    f.write("[interfaces]\n")
-                    f.write("  [[Rover TCP]]\n")
-                    f.write("    type = TCPServerInterface\n")
-                    f.write("    enabled = Yes\n")
-                    f.write("    listen_ip = 0.0.0.0\n")
-                    f.write(f"    listen_port = {self._tcp_port}\n")
-
-            # Initialize RNS (singleton — may already be running)
             try:
-                RNS.Reticulum(configdir=self._config_dir)
-            except OSError:
-                self._logger.warning("RNS already running, reusing existing instance")
-            RNS.loglevel = RNS.LOG_EXTREME
-            RNS.logdest = RNS.LOG_STDOUT
+                # Create config dir
+                os.makedirs(self._config_dir, exist_ok=True)
 
-            # Create LXMF router
-            storage_path = os.path.join(self._config_dir, "lxmf_storage")
-            os.makedirs(storage_path, exist_ok=True)
-            self._router = LXMF.LXMRouter(
-                identity=self._identity, storagepath=storage_path
-            )
+                # Load/create identity
+                identity_path = os.path.join(self._config_dir, "identity")
+                if os.path.exists(identity_path):
+                    self._identity = RNS.Identity.from_file(identity_path)
+                else:
+                    self._identity = RNS.Identity()
+                    self._identity.to_file(identity_path)
 
-            # Register delivery identity
-            self._delivery_dest = self._router.register_delivery_identity(
-                self._identity, "Rover", None
-            )
-            self._delivery_dest.announce()
+                # Write RNS config (ConfigObj INI format)
+                config_path = os.path.join(self._config_dir, "config")
+                with open(config_path, "w") as f:
+                    f.write("[reticulum]\n")
+                    f.write("enable_transport = True\n")
+                    f.write("share_instance = Yes\n")
+                    f.write("\n")
+                    f.write("[logging]\n")
+                    f.write("loglevel = 3\n")
+                    if self._tcp_port > 0:
+                        f.write("\n")
+                        f.write("[interfaces]\n")
+                        f.write("  [[Rover TCP]]\n")
+                        f.write("    type = TCPServerInterface\n")
+                        f.write("    enabled = Yes\n")
+                        f.write("    listen_ip = 0.0.0.0\n")
+                        f.write(f"    listen_port = {self._tcp_port}\n")
 
-            # Register callback
-            self._router.register_delivery_callback(self._on_lxmf_message)
+                # Initialize RNS (singleton — may already be running)
+                try:
+                    RNS.Reticulum(configdir=self._config_dir)
+                except OSError:
+                    self._logger.warning("RNS already running, reusing existing instance")
+                RNS.loglevel = RNS.LOG_EXTREME
+                RNS.logdest = RNS.LOG_STDOUT
 
-            return self._identity.hash.hex()
+                # Create LXMF router
+                storage_path = os.path.join(self._config_dir, "lxmf_storage")
+                os.makedirs(storage_path, exist_ok=True)
+                self._router = LXMF.LXMRouter(
+                    identity=self._identity, storagepath=storage_path
+                )
+
+                # Register delivery identity
+                self._delivery_dest = self._router.register_delivery_identity(
+                    self._identity, "Rover", None
+                )
+                self._delivery_dest.announce()
+
+                # Register callback
+                self._router.register_delivery_callback(self._on_lxmf_message)
+
+                return self._identity.hash.hex()
+            finally:
+                # Always restore original signal handler
+                signal.signal = _orig_signal
 
         # Run ALL synchronous init in executor thread
         identity_hash = await self._hass.async_add_executor_job(_init)
