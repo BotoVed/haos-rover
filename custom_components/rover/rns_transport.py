@@ -112,6 +112,24 @@ class RoverTransport:
                 # Force reset internal singleton
                 RNS.Reticulum._Reticulum__instance = None
 
+            # ALWAYS clean up Transport destinations even if no Reticulum instance detected
+            # (Transport module state persists across reloads after __instance reset)
+            try:
+                if hasattr(RNS.Transport, 'path_request_destination'):
+                    RNS.Transport.path_request_destination = None
+            except Exception:
+                pass
+            try:
+                if hasattr(RNS.Transport, 'link_establishment_destination'):
+                    RNS.Transport.link_establishment_destination = None
+            except Exception:
+                pass
+            try:
+                if hasattr(RNS.Transport, '_destinations'):
+                    RNS.Transport._destinations.clear()
+            except Exception:
+                pass
+
             # Save and monkey-patch signal.signal (RNS init requires main thread)
             _orig_signal = signal_module.signal
             signal_module.signal = lambda signum, handler: None
@@ -284,6 +302,23 @@ class RoverTransport:
             # Reset Reticulum singleton so next reload starts fresh
             try:
                 RNS.Reticulum._Reticulum__instance = None
+            except Exception:
+                pass
+
+            # Clear Transport destinations for clean re-init on reload
+            try:
+                if hasattr(RNS.Transport, 'path_request_destination'):
+                    RNS.Transport.path_request_destination = None
+            except Exception:
+                pass
+            try:
+                if hasattr(RNS.Transport, 'link_establishment_destination'):
+                    RNS.Transport.link_establishment_destination = None
+            except Exception:
+                pass
+            try:
+                if hasattr(RNS.Transport, '_destinations'):
+                    RNS.Transport._destinations.clear()
             except Exception:
                 pass
 
