@@ -116,6 +116,9 @@ Entry points: custom_components/rover/
 
 ## HAOS Deployment Pipeline (MANDATORY — from 2026-06-26)
 
+**⚠️ GATE: После reviewer APPROVED, ПЕРЕД git commit — загрузить skill: haos-deploy**
+Нарушение этого gate = GATE_DELEGATION_BYPASS. Skill загружается из `.opencode/skills/haos-deploy/SKILL.md`.
+
 **Правило:** ЛЮБОЕ изменение кода = новая версия = билд zip = ручная установка на HAOS.
 **Никаких пропусков.** Пользователь должен быть уверен, что на HAOS актуальные изменения.
 
