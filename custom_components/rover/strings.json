@@ -70,12 +70,12 @@
         }
       },
         "config": {
-          "title": "RC connecting",
-          "description": "Scan QR code to register a new remote.\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`",
-          "data": {
-            "qr_code": "Scan this QR code"
-          }
-        }
+    "title": "RC connecting",
+    "description": "Откройте приложение Rover на телефоне и нажмите «Подключиться по QR». Отсканируйте этот код, чтобы добавить шлюз.\n\n---\n\n**Сервер:** `{server_name}`\n**Identity:** `{identity}`\n**TCP:** `{tcp}`\n**UID:** `{uid}`",
+    "data": {
+        "qr_code": "QR-код для подключения приложения"
+    }
+  }
     },
     "abort": {
       "not_loaded": "Integration not fully loaded. Try again shortly.",

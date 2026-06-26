@@ -411,15 +411,9 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 }
             ),
             description_placeholders={
-                "identity": runtime.identity_hash or "unknown",
-                "payload": qr_json,
                 "server_name": server_name,
-                "pk": pk_base64[:32] + "..." if len(pk_base64) > 32 else pk_base64,
+                "identity": runtime.identity_hash or "unknown",
                 "tcp": tcp_endpoint or "(not set)",
                 "uid": qr_token,
-                "hash_m": hashes.get("m", ""),
-                "hash_u": hashes.get("u", ""),
-                "hash_a": hashes.get("a", ""),
-                "hash_d": hashes.get("d", ""),
             },
         )
