@@ -52,8 +52,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             step_id="init",
             menu_options={
                 "general": "General Settings",
-                "add_devices": "Add Devices",
-                "remove_device": "Remove Device",
+                "add_devices": "Manage Device",
                 "test_device": "Test Device",
                 "users": "Manage Users",
                 "config": "Configuration Export",
