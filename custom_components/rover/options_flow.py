@@ -1,8 +1,11 @@
 """Options flow for Rover integration."""
 from __future__ import annotations
 
+import io
 import json
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -30,6 +33,15 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _generate_qr_png(data: str) -> bytes:
+    """Generate QR code PNG bytes locally using segno (no external services)."""
+    import segno
+    qr = segno.make(data, error="L")
+    buffer = io.BytesIO()
+    qr.save(buffer, kind="png", scale=10, border=2)
+    return buffer.getvalue()
 
 
 class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
@@ -317,30 +329,23 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_config(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Show config and QR code per spec v0.5.0 §4.2."""
+        """Show QR code for remote registration per spec v0.5.0 §4.2."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         if runtime is None or runtime.registry is None:
             return self.async_abort(reason="not_loaded")
 
         if user_input is not None:
-            return await self.async_step_init()
+            return self.async_create_entry(title="", data={})
 
         # Generate fresh QR token (one-time, one active)
         qr_token = runtime.registry.generate_qr_token()
-        
-        # Get server name from meta
         meta = runtime.registry.get_meta()
         server_name = meta.get("server_name", "Rover Hub")
-        
-        # Get public key from transport
         pk_base64 = runtime.transport.get_public_key_base64() if runtime.transport else ""
-        
-        # Build TCP endpoint
         tcp_port = meta.get("tcp_port", 4242)
         local_ip = meta.get("local_ip", "")
         tcp_endpoint = f"{local_ip}:{tcp_port}" if local_ip else ""
-        
-        # QR payload per spec v0.5.0 §4.2
+
         qr_data = {
             "rvr": {
                 "fmt": QR_FORMAT_VERSION,
@@ -353,12 +358,21 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         }
         qr_json = json.dumps(qr_data, separators=(",", ":"))
 
-        import urllib.parse
+        # Generate QR PNG locally and save to www/ for HA static serving
+        try:
+            qr_png = _generate_qr_png(qr_json)
+            www_dir = self.hass.config.path("www")
+            qr_path = Path(www_dir) / "rover_qr.png"
 
-        qr_url = (
-            f"https://api.qrserver.com/v1/create-qr-code/"
-            f"?size=300x300&data={urllib.parse.quote(qr_json)}"
-        )
+            def _save_qr() -> None:
+                os.makedirs(www_dir, exist_ok=True)
+                qr_path.write_bytes(qr_png)
+
+            await self.hass.async_add_executor_job(_save_qr)
+            qr_url = "/local/rover_qr.png"
+        except Exception as err:
+            _LOGGER.warning("Failed to generate QR locally: %s", err)
+            qr_url = ""
 
         hashes = runtime.registry.get_hashes()
 
@@ -366,7 +380,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             step_id="config",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "qr": f"![QR]({qr_url})",
+                "qr": f"![QR]({qr_url})" if qr_url else "_(QR generation failed)_",
                 "identity": runtime.identity_hash or "unknown",
                 "payload": qr_json,
                 "server_name": server_name,

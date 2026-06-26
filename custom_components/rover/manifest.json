@@ -3,7 +3,7 @@
   "name": "Rover",
   "version": "0.2.12",
   "codeowners": ["@BotoVed"],
-  "requirements": ["msgpack>=1.0", "rns>=1.3.0", "lxmf>=0.9.6"],
+  "requirements": ["msgpack>=1.0", "rns>=1.3.0", "lxmf>=0.9.6", "segno>=1.6"],
   "config_flow": true,
   "single_config_entry": true,
   "integration_type": "hub",
