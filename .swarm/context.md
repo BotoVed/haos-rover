@@ -49,16 +49,16 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1453 | 1453 | 0 | 358ms |
-| bash | 1300 | 1300 | 0 | 2148ms |
-| edit | 428 | 428 | 0 | 29ms |
-| grep | 293 | 293 | 0 | 76ms |
+| read | 1458 | 1458 | 0 | 357ms |
+| bash | 1301 | 1301 | 0 | 2148ms |
+| edit | 432 | 432 | 0 | 29ms |
+| grep | 295 | 295 | 0 | 75ms |
 | glob | 222 | 222 | 0 | 619ms |
-| task | 184 | 184 | 0 | 85041ms |
-| declare_scope | 85 | 85 | 0 | 4ms |
+| task | 186 | 186 | 0 | 84562ms |
+| declare_scope | 86 | 86 | 0 | 4ms |
 | write | 73 | 73 | 0 | 21ms |
+| update_task_status | 63 | 63 | 0 | 21ms |
 | webfetch | 59 | 59 | 0 | 3211ms |
-| update_task_status | 58 | 58 | 0 | 22ms |
 | syntax_check | 55 | 55 | 0 | 54ms |
 | search | 44 | 44 | 0 | 26ms |
 | test_runner | 41 | 41 | 0 | 1448ms |
@@ -447,10 +447,68 @@ Currently running on 192.168.1.114: v0.2.13 with Rover 0.2.13 loaded. Identity: 
 - tests/test_options_flow.py (needs update — 33 failures pending)
 - tests/test_rns_transport.py (MagicMock→AsyncMock fix — 89/89 pass)
 
-### Next Steps / TODO for v0.2.14+
+### Next Steps / TODO for v0.2.18+
 
-1. Update tests/test_options_flow.py to match renamed steps and new methods (33 failures)
-2. Update tests/test_init.py version assertions (already partially done)
-3. Verify description_placeholders rendering for v0.2.13 RC connecting on HAOS
-4. If description_placeholders STILL doesn't work, refactor RC connecting to use TextSelector-based approach
-5. Revoke the exposed GitHub PAT
+1. Fix QR display — use api.qrserver.com external image URL instead of local segno (follow old `/home/boss/tmp/rover` pattern)
+2. Fix Test Device step — verify build_service_call for all 11 device types, improve error handling
+3. Update tests/test_options_flow.py — fix 4 stale tests (menu label, async_add_executor_job mock)
+4. Clean up old rover_0.2.10-0.2.13.zip files from repo root
+5. Revoke exposed GitHub PAT (manual action by user)
+
+---
+
+## Phase 7-8 Session: Test Fix + UX Improvements (2026-06-26)
+
+### Overview
+This session fixed test regressions, improved options flow UX, and established the mandatory HAOS deployment pipeline. 4 patch releases shipped: v0.2.14 → v0.2.17.
+
+### Releases Timeline
+
+- **v0.2.14** (9800b7e): Fixed TextSelectorConfig import error (blocked all tests), updated test_options_flow.py for renamed steps, fixed test_init.py version assertions. **466/466 tests pass.** Committed and pushed with tag.
+- **v0.2.15** (6ea0b35): UX overhaul — renamed "Configuration Export" → "RC connecting", added TextSelector fallback for QR URL, added USB device auto-detection dropdown, hid TCP port from General Settings. Committed and pushed with tag.
+- **v0.2.16** (ed6116c): Fixed `import serial.tools.list_ports` crash — moved from top-level import to lazy import inside `_detect_usb_devices()` with ImportError fallback. Prevents options flow crash when pyserial not installed on HAOS.
+- **v0.2.17** (0ab128b): Simplified General Settings — removed `ping_interval`, `local_ip`, `ssid` fields. Only `server_name` + `usb_device` remain.
+
+### New Artifacts
+- `.opencode/skills/haos-deploy/SKILL.md` — MANDATORY deploy pipeline skill for HAOS projects
+- Knowledge entry `2d694146` — HAOS deploy gate: load haos-deploy after reviewer APPROVAL
+- `.swarm/context.md` HAOS Deployment Pipeline section now has explicit GATE reminder
+
+### HAOS Deploy Pipeline Gate (MANDATORY)
+**GATE:** After reviewer APPROVED, BEFORE git commit → load skill:haos-deploy
+Violation = GATE_DELEGATION_BYPASS. No exceptions.
+
+### Current HAOS State (192.168.1.114)
+- Deployed: v0.2.17 (as of 2026-06-26)
+- Identity: 80955fb8f2c3d548
+- Storage: `/config/rover/identity`
+- TCP interface: port 4242 (RNS-managed)
+- RNs config: `/config/rover/config` (INI format)
+- LXMF storage: `/config/rover/lxmf_storage/`
+
+### Files Changed in this Session
+- custom_components/rover/__init__.py (version bumps: 0.2.13→0.2.17)
+- custom_components/rover/manifest.json (version bumps + segno)
+- custom_components/rover/options_flow.py (RC connecting label, QR TextSelector, USB detection, TCP port removal, General Settings simplification)
+- custom_components/rover/strings.json (menu label, QR description, USB translation, field removals)
+- custom_components/rover/pyproject.toml (version bumps)
+- tests/test_init.py (version assertions to 0.2.13)
+- tests/test_options_flow.py (updated to match device_picker API)
+- tests/test_rns_transport.py (MagicMock→AsyncMock fix — 89/89 pass)
+- .swarm/context.md (session log, HAOS deploy GATE, USB selector fix)
+- .opencode/skills/haos-deploy/SKILL.md (NEW — deploy pipeline skill)
+
+### Key Technical Discoveries (this session)
+
+1. **serial.tools.list_ports import crash** — top-level import of pyserial blocks entire module import if pyserial not installed. Must use lazy import: `import serial.tools.list_ports` inside the function with `try/except ImportError`.
+
+2. **SelectSelectorConfig syntax** — HA's SelectSelector expects `options` as a list of dicts `{"value": ..., "label": ...}`, NOT separate `options` list + `labels` dict. Wrong syntax silently fails with "Error" in the UI.
+
+3. **description_placeholders limitations** — in HA options flows, markdown `![QR]({url})` in description_placeholders may not render. Workaround: add TextSelector field showing the URL directly.
+
+4. **Common integration patterns** (from HA core examples — mqtt, zha, hue, wled, tado, esphome, tplink):
+   - Options flows typically use `async_step_init` → `async_create_entry(title="", data=user_input)`
+   - Form schemas with `self.add_suggested_values_to_schema()` for preserving defaults
+   - Discovery flows use `self.async_set_unique_id()` + `self._abort_if_unique_id_configured()`
+   - OptionsFlowWithReload for auto-reload on settings change
+   - Minimal form fields — integrations rarely expose more than 1-3 settings
