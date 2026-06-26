@@ -410,4 +410,10 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     ),
                 }
             ),
+            description_placeholders={
+                "server_name": server_name,
+                "identity": runtime.identity_hash or "unknown",
+                "tcp": tcp_endpoint or "(not set)",
+                "uid": qr_token,
+            },
         )

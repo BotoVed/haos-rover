@@ -1,7 +1,7 @@
 """Rover — Remote Over Radio for Home Assistant."""
 from __future__ import annotations
 
-__version__ = "0.2.26"
+__version__ = "0.2.27"
 
 import logging
 from typing import Callable
