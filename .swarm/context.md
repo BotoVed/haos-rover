@@ -49,24 +49,24 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1465 | 1465 | 0 | 356ms |
-| bash | 1302 | 1302 | 0 | 2148ms |
-| edit | 436 | 436 | 0 | 28ms |
-| grep | 297 | 297 | 0 | 75ms |
-| glob | 222 | 222 | 0 | 619ms |
-| task | 188 | 188 | 0 | 84082ms |
-| declare_scope | 87 | 87 | 0 | 4ms |
+| read | 1479 | 1479 | 0 | 353ms |
+| bash | 1305 | 1305 | 0 | 2144ms |
+| edit | 442 | 442 | 0 | 29ms |
+| grep | 298 | 298 | 0 | 75ms |
+| glob | 225 | 225 | 0 | 611ms |
+| task | 192 | 192 | 0 | 82842ms |
+| declare_scope | 88 | 88 | 0 | 4ms |
 | write | 73 | 73 | 0 | 21ms |
 | update_task_status | 63 | 63 | 0 | 21ms |
 | webfetch | 59 | 59 | 0 | 3211ms |
 | syntax_check | 55 | 55 | 0 | 54ms |
 | search | 44 | 44 | 0 | 26ms |
-| test_runner | 41 | 41 | 0 | 1448ms |
+| test_runner | 42 | 42 | 0 | 1437ms |
 | retrieve_summary | 35 | 35 | 0 | 8ms |
 | summarize_work | 27 | 27 | 0 | 44ms |
-| diff | 24 | 24 | 0 | 70ms |
-| todo_extract | 20 | 20 | 0 | 4ms |
-| pre_check_batch | 17 | 17 | 0 | 586ms |
+| diff | 25 | 25 | 0 | 86ms |
+| todo_extract | 21 | 21 | 0 | 4ms |
+| pre_check_batch | 18 | 18 | 0 | 590ms |
 | web_search | 17 | 17 | 0 | 7ms |
 | skill | 15 | 15 | 0 | 79ms |
 | knowledge_add | 15 | 15 | 0 | 135ms |

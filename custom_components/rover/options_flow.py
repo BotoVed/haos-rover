@@ -1,6 +1,7 @@
 """Options flow for Rover integration."""
 from __future__ import annotations
 
+import base64
 import io
 import json
 import logging
@@ -387,12 +388,14 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         }
         qr_json = json.dumps(qr_data, separators=(",", ":"))
 
-        # Build external QR image URL (renders in description if markdown supported)
-        qr_url = _build_qr_image_url(qr_json)
-        
-        # Also save locally as fallback (accessible at /local/rover_qr.png)
+        # Generate QR PNG and embed as base64 data URI (bypasses CSP)
+        qr_url = ""
         try:
             qr_png = _generate_qr_png(qr_json)
+            qr_b64 = base64.b64encode(qr_png).decode()
+            qr_url = f"data:image/png;base64,{qr_b64}"
+            
+            # Also save to www/ for direct access
             www_dir = self.hass.config.path("www")
             qr_path = Path(www_dir) / "rover_qr.png"
 
@@ -402,7 +405,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
             await self.hass.async_add_executor_job(_save_qr)
         except Exception as err:
-            _LOGGER.warning("Failed to save QR locally: %s", err)
+            _LOGGER.warning("Failed to generate QR: %s", err)
 
         hashes = runtime.registry.get_hashes()
 
