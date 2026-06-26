@@ -186,6 +186,8 @@ def mock_runtime(mock_registry, mock_handlers):
     runtime.hass = MagicMock()
     runtime.hass.services = MagicMock()
     runtime.hass.services.async_call = AsyncMock(return_value=None)
+    runtime.hass.states = MagicMock()
+    runtime.hass.states.get = MagicMock()
     return runtime
 
 
@@ -202,7 +204,9 @@ def mock_config_entry(mock_runtime):
 @pytest.fixture
 def flow(mock_config_entry):
     """Create a RoverOptionsFlow instance with a populated config entry."""
-    return RoverOptionsFlow(mock_config_entry)
+    flow_instance = RoverOptionsFlow(mock_config_entry)
+    flow_instance.hass = mock_config_entry.runtime_data.hass
+    return flow_instance
 
 
 # =========================================================================
@@ -319,90 +323,112 @@ class TestAsyncStepDevices:
 
     async def test_shows_form_with_type_options(self, flow) -> None:
         """The form should include type options derived from TYPE_DEFS."""
-        result = await flow.async_step_devices()
+        result = await flow.async_step_device_picker()
         assert result["type"] == "form"
-        assert result["step_id"] == "devices"
+        assert result["step_id"] == "device_picker"
 
     async def test_adds_single_device(self, flow, mock_registry) -> None:
-        user_input = {
-            "entities": ["light.kitchen"],
-            "type": "LT",
-            "name": "Kitchen Light",
-            "area_id": 1,
-        }
-        result = await flow.async_step_devices(user_input)
+        # Mock state with friendly_name
+        mock_state = MagicMock()
+        mock_state.attributes = {"friendly_name": "Kitchen Light"}
+        flow.config_entry.runtime_data.hass.states.get.return_value = mock_state
+        
+        user_input = {"entities": ["light.bedroom"]}
+        result = await flow.async_step_device_picker(user_input)
+        
+        # DOMAIN_TO_TYPE["light"] = "LT"
         mock_registry.add_device.assert_awaited_once_with(
-            "light.kitchen", "Kitchen Light", "LT", 1
+            "light.bedroom", "Kitchen Light", "LT", area_id=None
         )
-        assert result["type"] == "menu"  # returns to init
+        assert result["type"] == "menu"  # returns to init via async_step_init()
 
     async def test_adds_multiple_devices(self, flow, mock_registry) -> None:
+        # Mock states with friendly_name - order doesn't matter due to set iteration
+        mock_state_bedroom = MagicMock()
+        mock_state_bedroom.attributes = {"friendly_name": "Kitchen Light"}
+        mock_state_garage = MagicMock()
+        mock_state_garage.attributes = {"friendly_name": "Fan"}
+        
+        # Create a mock that returns the correct state for each entity_id
+        def get_state(entity_id):
+            if entity_id == "light.bedroom":
+                return mock_state_bedroom
+            elif entity_id == "switch.garage":
+                return mock_state_garage
+            return MagicMock()
+        
+        flow.config_entry.runtime_data.hass.states.get.side_effect = get_state
+        
         user_input = {
-            "entities": ["light.kitchen", "switch.fan"],
-            "type": "LT",
-            "name": "Light",
-            "area_id": None,
+            "entities": ["light.bedroom", "switch.garage"],
         }
-        result = await flow.async_step_devices(user_input)
+        result = await flow.async_step_device_picker(user_input)
         assert mock_registry.add_device.call_count == 2
         mock_registry.add_device.assert_has_calls(
             [
-                call("light.kitchen", "Light", "LT", None),
-                call("switch.fan", "Light", "LT", None),
-            ]
+                call("light.bedroom", "Kitchen Light", "LT", area_id=None),
+                call("switch.garage", "Fan", "SW", area_id=None),
+            ],
+            any_order=True,
         )
         assert result["type"] == "menu"
 
     async def test_uses_entity_id_suffix_when_name_not_provided(
         self, flow, mock_registry
     ) -> None:
+        # Mock state without friendly_name
+        mock_state = MagicMock()
+        mock_state.attributes = {}
+        flow.config_entry.runtime_data.hass.states.get.return_value = mock_state
+        
         user_input = {
             "entities": ["switch.my_switch"],
-            "type": "SW",
-            # no "name" key
         }
-        await flow.async_step_devices(user_input)
+        await flow.async_step_device_picker(user_input)
         mock_registry.add_device.assert_awaited_once_with(
-            "switch.my_switch", "my_switch", "SW", None
+            "switch.my_switch", "my_switch", "SW", area_id=None
         )
 
     async def test_handles_entity_id_without_dot(self, flow, mock_registry) -> None:
-        """If entity_id has no dot, split returns the full string."""
+        """If entity_id has no dot, domain extraction fails and device is skipped."""
+        # Mock state with friendly_name
+        mock_state = MagicMock()
+        mock_state.attributes = {"friendly_name": "Plain"}
+        flow.config_entry.runtime_data.hass.states.get.return_value = mock_state
+        
         user_input = {
             "entities": ["plain_entity"],
-            "type": "SW",
-            "name": "Plain",
-            "area_id": None,
         }
-        await flow.async_step_devices(user_input)
-        mock_registry.add_device.assert_awaited_once_with(
-            "plain_entity", "Plain", "SW", None
-        )
+        await flow.async_step_device_picker(user_input)
+        # Domain extraction fails (no dot), so device is skipped
+        mock_registry.add_device.assert_not_called()
 
     async def test_handles_value_error_on_add_device(
         self, flow, mock_registry, caplog
     ) -> None:
         """When add_device raises ValueError, it logs a warning and continues."""
+        # Mock state with friendly_name
+        mock_state = MagicMock()
+        mock_state.attributes = {"friendly_name": "Test"}
+        flow.config_entry.runtime_data.hass.states.get.return_value = mock_state
+        
         mock_registry.add_device = AsyncMock(side_effect=ValueError("Duplicate"))
         user_input = {
-            "entities": ["light.kitchen", "switch.fan"],
-            "type": "LT",
-            "name": "Test",
-            "area_id": None,
+            "entities": ["light.bedroom", "switch.garage"],
         }
         # Should not raise
-        result = await flow.async_step_devices(user_input)
+        result = await flow.async_step_device_picker(user_input)
         assert result["type"] == "menu"
 
     async def test_aborts_when_runtime_is_none(self, flow) -> None:
         flow.config_entry.runtime_data = None
-        result = await flow.async_step_devices()
+        result = await flow.async_step_device_picker()
         assert result["type"] == "abort"
         assert result["reason"] == "not_loaded"
 
     async def test_aborts_when_registry_is_none(self, flow) -> None:
         flow.config_entry.runtime_data.registry = None
-        result = await flow.async_step_devices()
+        result = await flow.async_step_device_picker()
         assert result["type"] == "abort"
         assert result["reason"] == "not_loaded"
 

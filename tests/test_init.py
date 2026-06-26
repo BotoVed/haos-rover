@@ -13,7 +13,7 @@ from custom_components.rover.const import DOMAIN
 
 class TestVersion:
     def test_version_value(self) -> None:
-        assert init_mod.__version__ == "0.2.9"
+        assert init_mod.__version__ == "0.2.13"
 
     def test_version_is_string(self) -> None:
         assert isinstance(init_mod.__version__, str)
@@ -467,7 +467,7 @@ class TestManifest:
 
     def test_version_matches(self) -> None:
         manifest = json.loads(_MANIFEST_PATH.read_text())
-        assert manifest["version"] == "0.2.9"
+        assert manifest["version"] == "0.2.13"
 
     def test_domain_matches(self) -> None:
         manifest = json.loads(_MANIFEST_PATH.read_text())

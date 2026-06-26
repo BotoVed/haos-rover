@@ -49,38 +49,38 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1154 | 1154 | 0 | 430ms |
-| bash | 1019 | 1019 | 0 | 1451ms |
-| edit | 309 | 309 | 0 | 26ms |
-| grep | 208 | 208 | 0 | 75ms |
-| glob | 185 | 185 | 0 | 701ms |
-| task | 128 | 128 | 0 | 92405ms |
-| write | 72 | 72 | 0 | 21ms |
+| read | 1395 | 1395 | 0 | 365ms |
+| bash | 1274 | 1274 | 0 | 2174ms |
+| edit | 405 | 405 | 0 | 29ms |
+| grep | 272 | 272 | 0 | 79ms |
+| glob | 212 | 212 | 0 | 647ms |
+| task | 168 | 168 | 0 | 90567ms |
+| declare_scope | 75 | 75 | 0 | 5ms |
+| write | 73 | 73 | 0 | 21ms |
+| update_task_status | 58 | 58 | 0 | 22ms |
 | syntax_check | 55 | 55 | 0 | 54ms |
-| update_task_status | 54 | 54 | 0 | 23ms |
-| declare_scope | 54 | 54 | 0 | 4ms |
-| search | 37 | 37 | 0 | 24ms |
-| retrieve_summary | 27 | 27 | 0 | 4ms |
+| search | 40 | 40 | 0 | 28ms |
+| test_runner | 39 | 39 | 0 | 1469ms |
+| retrieve_summary | 35 | 35 | 0 | 8ms |
+| webfetch | 29 | 29 | 0 | 734ms |
 | summarize_work | 27 | 27 | 0 | 44ms |
-| test_runner | 22 | 22 | 0 | 1086ms |
-| diff | 17 | 17 | 0 | 68ms |
-| todo_extract | 17 | 17 | 0 | 3ms |
-| skill | 14 | 14 | 0 | 63ms |
-| web_search | 13 | 13 | 0 | 6ms |
-| webfetch | 13 | 13 | 0 | 784ms |
+| diff | 19 | 19 | 0 | 80ms |
+| todo_extract | 19 | 19 | 0 | 4ms |
+| skill | 15 | 15 | 0 | 79ms |
+| web_search | 15 | 15 | 0 | 7ms |
+| swarm_command | 13 | 13 | 0 | 38ms |
+| knowledge_add | 13 | 13 | 0 | 147ms |
 | write_retro | 13 | 13 | 0 | 59ms |
-| swarm_command | 11 | 11 | 0 | 44ms |
+| save_plan | 11 | 11 | 0 | 99ms |
 | placeholder_scan | 11 | 11 | 0 | 54ms |
-| knowledge_add | 11 | 11 | 0 | 170ms |
-| todowrite | 10 | 10 | 0 | 7ms |
-| save_plan | 8 | 8 | 0 | 91ms |
-| pre_check_batch | 7 | 7 | 0 | 687ms |
-| check_gate_status | 7 | 7 | 0 | 42ms |
-| gitingest | 7 | 7 | 0 | 126327ms |
+| gitingest | 11 | 11 | 0 | 81168ms |
+| todowrite | 11 | 11 | 0 | 7ms |
+| pre_check_batch | 10 | 10 | 0 | 625ms |
+| check_gate_status | 8 | 8 | 0 | 37ms |
 | get_approved_plan | 6 | 6 | 0 | 4ms |
+| phase_complete | 5 | 5 | 0 | 56908ms |
 | build_check | 4 | 4 | 0 | 93ms |
 | lint | 4 | 4 | 0 | 549ms |
-| phase_complete | 4 | 4 | 0 | 70975ms |
 | set_qa_gates | 3 | 3 | 0 | 47ms |
 | get_qa_gate_profile | 3 | 3 | 0 | 15ms |
 | write_drift_evidence | 3 | 3 | 0 | 13ms |
@@ -92,6 +92,7 @@ Entry points: custom_components/rover/
 | spec_write | 2 | 2 | 0 | 30ms |
 | sbom_generate | 2 | 2 | 0 | 2ms |
 | req_coverage | 2 | 2 | 0 | 6ms |
+| invalid | 2 | 2 | 0 | 8ms |
 | diff_summary | 1 | 1 | 0 | 89ms |
 | question | 1 | 1 | 0 | 8181ms |
 | knowledge_query | 1 | 1 | 0 | 10ms |
@@ -100,7 +101,8 @@ Entry points: custom_components/rover/
 | checkpoint | 1 | 1 | 0 | 9ms |
 | knowledge_receipt | 1 | 1 | 0 | 201ms |
 | dispatch_lanes | 1 | 1 | 0 | 300058ms |
-| invalid | 1 | 1 | 0 | 3ms |
+| lint_spec | 1 | 1 | 0 | 31ms |
+| knowledge_recall | 1 | 1 | 0 | 117ms |
 ## Versioning & Commit Rules (from 24.06.2026)
 - После таски + минор → bump minor (0.0.1 → 0.1.0)
 - После исправлений (bugfix) → ++patch (0.0.1 → 0.0.2)
@@ -109,6 +111,87 @@ Entry points: custom_components/rover/
 - Тег: semver без v-префикса (HACS reject non-standard)
 - После коммита — git push (commit + tag)
 - Перед деплоем на HAOS — git push, ZIP собрать, Release создать (Actions || руками)
+
+---
+
+## HAOS Deployment Pipeline (MANDATORY — from 2026-06-26)
+
+**Правило:** ЛЮБОЕ изменение кода = новая версия = билд zip = ручная установка на HAOS.
+**Никаких пропусков.** Пользователь должен быть уверен, что на HAOS актуальные изменения.
+
+### Алгоритм после каждого патча:
+
+#### 1. Bump версии (3 источника синхронизации)
+```
+manifest.json        →  "version": "0.2.14"
+__init__.py          →  __version__ = "0.2.14"
+git tag              →  0.2.14 (без v-префикса)
+```
+**Проверка:** все три должны совпадать. При несовпадении — билд бракованный.
+
+#### 2. Коммит + тег
+```bash
+git add -A
+git commit -m "v0.2.14: <краткое описание изменений>"
+git tag 0.2.14
+git push origin main --tags
+```
+
+#### 3. Билд rover.zip
+```bash
+cd custom_components/rover
+zip -r ../../rover.zip . -x "__pycache__/*" "*.pyc"
+cd ../..
+```
+**Что внутри:** все `.py`, `manifest.json`, `const.py`, `services.yaml` — без мусора.
+
+#### 4. GitHub Release (опционально, но рекомендуется)
+```bash
+gh release create 0.2.14 --title "v0.2.14" --generate-notes rover.zip
+```
+Или через GitHub Actions (автоматически при push тега).
+
+#### 5. Установка на HAOS (пользователь)
+Пользователь любым способом закидывает `rover.zip` на HAOS:
+- **Вариант А:** копирует zip → разархивирует в `/config/custom_components/rover/`
+- **Вариант Б:** копирует файлы напрямую через Samba в `\\haos\config\custom_components\rover\`
+- **Вариант В:** `scp rover.zip root@haos:/config/ && ssh root@haos "cd /config/custom_components/rover && unzip -o /config/rover.zip"`
+
+#### 6. Перезапуск HA (пользователь)
+```
+Supervisor → System → Restart Core
+```
+Или Reload интеграции, если менялась только логика (без новых файлов).
+
+#### 7. Проверка (пользователь)
+- Смотрит логи: `ha core logs | grep -i rover`
+- Проверяет поведение
+- Даёт фидбек
+
+### Полный цикл:
+```
+Я правлю код → я билжу rover.zip → я отдаю тебе zip →
+→ ты копируешь на HAOS → ты перезапускаешь HA → ты проверяешь →
+→ даёшь мне фидбек → repeat
+```
+
+### История версий (тестирование):
+```
+0.2.13 → 0.2.14 → 0.2.15 → ... → 0.2.N (тестирование) → 0.3.0 (стабильный релиз)
+```
+
+### Важные нюансы:
+- `__pycache__/` копировать НЕ надо — HA сам скомпилирует
+- При добавлении новых файлов — нужен рестарт HA (HA кеширует структуру)
+- При изменении кода — достаточно Reload (если только логика, без новых файлов)
+- После краша — смотри `home-assistant.log`
+
+### Где лежат данные на HAOS:
+```
+/config/.storage/rover.*    — Store-бэкап registry (meta, users, devices)
+/config/rover_config/       — Reticulum identity + config
+/config/www/rover_qr.png    — сгенерированный QR-код
+```
 
 ---
 
@@ -299,3 +382,72 @@ ls .swarm/evidence/*.json
 - **Не доверять plan.md** как источнику истины — он auto-regenerated из plan.json, но task statuses не синхронизированы
 - **Не искать ретроспективы в `.swarm/evidence/{N}/`** — они в `retro-N/`
 - **Не искать gate evidence в `retro-N/`** — оно в `.swarm/evidence/{taskId}.json`
+
+---
+
+## v0.2.9-v0.2.13: Options Flow UX Overhaul (2026-06-25/26)
+
+### Overview
+This iteration focused on making the options flow in HA actually work, with a proper UI, local QR generation, and a diff-based "Manage device registration" workflow. 5 patch releases shipped in one session.
+
+### Releases Timeline
+- **v0.2.9** (51e1d3d): options flow UX overhaul — config_flow gear icon fix (added `async_get_options_flow`), menu items as dict (inline labels, bypasses translation cache issue), merged General+Network into one step, removed "Pending Remotes" step, auto-detect device type from entity domain (DOMAIN_TO_TYPE), auto-fill name from HA friendly_name. Bug fix: 31 MagicMock→AsyncMock in test_rns_transport.py.
+- **v0.2.10** (02ad321): show already-registered devices in Add Devices picker — used TextSelector field with formatted device list (workaround for broken `description_placeholders` in options flows).
+- **v0.2.11** (95e1391): "Manage device registration" with pre-filled entities + diff save. Entities field is pre-populated with currently registered device entity_ids; on submit, computes diff: adds new, removes unchecked. Submit button "сохранить изменения".
+- **v0.2.12** (731d34b): renamed menu "Add Devices" → "Manage Device". Removed "Remove Device" menu item (redundant with diff-save flow in v0.2.11).
+- **v0.2.13** (ab37432 + 3eb4862): local QR generation with `segno>=1.6` (pure Python, no Pillow needed). Saved PNG to `/config/www/rover_qr.png` for HA to serve at `/local/rover_qr.png`. Renamed menu "Configuration Export" → "RC connecting". Submit button "Завершить" calls `async_create_entry()` to close the flow. Fixed blocking file I/O with `hass.async_add_executor_job`.
+
+### Key Technical Discoveries
+
+1. **description_placeholders IS BROKEN in HA 2026.4.x options flows** — front-end doesn't substitute `{key}` in descriptions for options steps. Workaround: use TextSelector field to show dynamic content directly, or use `async_show_menu` with `menu_options` as dict (keys=step_ids, values=display names) to render titles without translation lookup.
+
+2. **HA 2026.4.3 frontend source for show-dialog-options-flow.ts** shows expected format: `hass.localize("component.{domain}.options.step.{step_id}.description", step.description_placeholders)` — but for our custom integration the substitution didn't render. The frontend uses `<ha-markdown>` to render descriptions. Issue may be specific to custom integrations vs built-in ones.
+
+3. **menu_options as dict bypasses translation cache** — when we use a list like `["general", "network", ...]`, HA needs the translation key `menu_options.{key}` to render. When we use a dict like `{"general": "General Settings", ...}`, the dict values are used directly without translation lookup. This is the trick that made menu items show titles.
+
+4. **device_picker with pre-filled entities** — the EntitySelector accepts `default` value to pre-fill with currently registered entity_ids. On submit, compute diff: `new - old` = add, `old - new` = remove. This replaces separate "Add" and "Remove" steps.
+
+5. **local QR generation with segno**:
+   ```python
+   import segno
+   qr = segno.make(data, error="L")
+   buffer = io.BytesIO()
+   qr.save(buffer, kind="png", scale=10, border=2)
+   ```
+   Save to `/config/www/rover_qr.png` — HA serves it at `/local/rover_qr.png`. Description markdown `![QR](/local/rover_qr.png)` should render the image (if description rendering works in options flow).
+
+### Known Issues (as of v0.2.13)
+
+1. **Test failures** — 33 tests fail in `tests/test_options_flow.py` and `tests/test_init.py` due to options flow refactoring (renamed steps, removed methods). These are pre-existing test code that needs updating to match new API. Tests for `test_rns_transport.py` now pass 89/89 after MagicMock→AsyncMock fix in v0.2.9.
+
+2. **description_placeholders** — even in v0.2.13 RC connecting step, the `{qr}` placeholder may not render. User needs to verify on HAOS whether the QR image shows in the form description or only at `/local/rover_qr.png` direct URL.
+
+3. **GitHub releases** — only v0.2.4 to v0.2.9 had pre-existing GitHub Releases. v0.2.10 through v0.2.13 were backfilled retroactively. All have ZIP assets but the ZIPs for 0.2.10-0.2.12 are identical to v0.2.13 (built from current code at time of release creation).
+
+### Security Note
+
+**GitHub PAT was exposed in conversation log** — should be revoked and replaced. Used in this session for creating releases and uploading ZIPs.
+
+### HAOS Deployment State
+
+Currently running on 192.168.1.114: v0.2.13 with Rover 0.2.13 loaded. Identity: 80955fb8f2c3d548.
+
+### Files Modified in v0.2.9-v0.2.13
+
+- custom_components/rover/__init__.py (version bumps)
+- custom_components/rover/manifest.json (version bumps + segno requirement)
+- custom_components/rover/config_flow.py (added async_get_options_flow)
+- custom_components/rover/options_flow.py (major refactor: pre-filled entities, diff save, local QR)
+- custom_components/rover/strings.json (menu relabel, step additions, submit buttons)
+- custom_components/rover/dispatcher.py, handlers.py, registry.py, ha_bridge.py, rns_transport.py (untouched, included for context)
+- tests/test_init.py (version assertions to 0.2.13)
+- tests/test_options_flow.py (needs update — 33 failures pending)
+- tests/test_rns_transport.py (MagicMock→AsyncMock fix — 89/89 pass)
+
+### Next Steps / TODO for v0.2.14+
+
+1. Update tests/test_options_flow.py to match renamed steps and new methods (33 failures)
+2. Update tests/test_init.py version assertions (already partially done)
+3. Verify description_placeholders rendering for v0.2.13 RC connecting on HAOS
+4. If description_placeholders STILL doesn't work, refactor RC connecting to use TextSelector-based approach
+5. Revoke the exposed GitHub PAT

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -72,8 +72,11 @@ def _make_transport(
     tcp_port: int = 4242,
 ):
     """Build a RoverTransport with real constructor args."""
+    if hass is None:
+        hass = MagicMock()
+        hass.async_add_executor_job = AsyncMock(side_effect=lambda f, *args: f(*args))
     return RoverTransport(
-        hass=hass or MagicMock(),
+        hass=hass,
         config_dir=config_dir or tempfile.mkdtemp(),
         on_message=on_message or MagicMock(),
         tcp_port=tcp_port,
@@ -712,7 +715,7 @@ class TestShutdown:
         router_ref = tr._router  # Save reference before shutdown
         assert router_ref is not None
 
-        await tr.shutdown()
+        await tr.shutdown(full_teardown=True)
         router_ref.stop.assert_called_once()
 
     @pytest.mark.asyncio

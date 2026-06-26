@@ -21,7 +21,6 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
     TextSelector,
-    TextSelectorConfig,
 )
 
 from .const import (
