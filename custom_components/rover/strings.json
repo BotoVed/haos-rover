@@ -71,8 +71,11 @@
       },
         "config": {
           "title": "RC connecting",
-          "description": "Scan QR code to register a new remote:\n\n<ha-qr-code data=\"{qr_data}\" scale=\"6\" width=\"300\" margin=\"8\" error-correction-level=\"low\"></ha-qr-code>\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`"
-      }
+          "description": "Scan QR code to register a new remote.\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`",
+          "data": {
+            "qr_code": "Scan this QR code"
+          }
+        }
     },
     "abort": {
       "not_loaded": "Integration not fully loaded. Try again shortly.",

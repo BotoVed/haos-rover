@@ -17,6 +17,9 @@ from homeassistant.helpers.selector import (
     EntitySelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
+    QrCodeSelector,
+    QrCodeSelectorConfig,
+    QrErrorCorrectionLevel,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -380,9 +383,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         }
         qr_json = json.dumps(qr_dict, separators=(",", ":"))
 
-        # Generate QR data payload for native <ha-qr-code> component
-        qr_payload = qr_json.replace('"', "&quot;")  # HTML-escaped for <ha-qr-code data="...">
-        
         # Also save local PNG as fallback (accessible at /local/rover_qr.png)
         try:
             qr_png = _generate_qr_png(qr_json)
@@ -399,9 +399,18 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
         return self.async_show_form(
             step_id="config",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("qr_code"): QrCodeSelector(
+                        config=QrCodeSelectorConfig(
+                            data=qr_json,
+                            scale=6,
+                            error_correction_level=QrErrorCorrectionLevel.LOW,
+                        )
+                    ),
+                }
+            ),
             description_placeholders={
-                "qr_data": qr_payload,
                 "identity": runtime.identity_hash or "unknown",
                 "payload": qr_json,
                 "server_name": server_name,
