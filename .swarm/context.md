@@ -49,28 +49,28 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1446 | 1446 | 0 | 360ms |
-| bash | 1294 | 1294 | 0 | 2154ms |
-| edit | 425 | 425 | 0 | 29ms |
-| grep | 284 | 284 | 0 | 77ms |
-| glob | 221 | 221 | 0 | 622ms |
-| task | 182 | 182 | 0 | 85797ms |
-| declare_scope | 84 | 84 | 0 | 4ms |
+| read | 1453 | 1453 | 0 | 358ms |
+| bash | 1300 | 1300 | 0 | 2148ms |
+| edit | 428 | 428 | 0 | 29ms |
+| grep | 293 | 293 | 0 | 76ms |
+| glob | 222 | 222 | 0 | 619ms |
+| task | 184 | 184 | 0 | 85041ms |
+| declare_scope | 85 | 85 | 0 | 4ms |
 | write | 73 | 73 | 0 | 21ms |
 | webfetch | 59 | 59 | 0 | 3211ms |
 | update_task_status | 58 | 58 | 0 | 22ms |
 | syntax_check | 55 | 55 | 0 | 54ms |
-| search | 41 | 41 | 0 | 28ms |
-| test_runner | 40 | 40 | 0 | 1455ms |
+| search | 44 | 44 | 0 | 26ms |
+| test_runner | 41 | 41 | 0 | 1448ms |
 | retrieve_summary | 35 | 35 | 0 | 8ms |
 | summarize_work | 27 | 27 | 0 | 44ms |
-| diff | 22 | 22 | 0 | 72ms |
+| diff | 23 | 23 | 0 | 72ms |
 | todo_extract | 20 | 20 | 0 | 4ms |
 | web_search | 17 | 17 | 0 | 7ms |
+| pre_check_batch | 16 | 16 | 0 | 588ms |
 | skill | 15 | 15 | 0 | 79ms |
-| pre_check_batch | 15 | 15 | 0 | 585ms |
+| knowledge_add | 15 | 15 | 0 | 135ms |
 | swarm_command | 13 | 13 | 0 | 38ms |
-| knowledge_add | 13 | 13 | 0 | 147ms |
 | write_retro | 13 | 13 | 0 | 59ms |
 | save_plan | 12 | 12 | 0 | 94ms |
 | placeholder_scan | 11 | 11 | 0 | 54ms |
@@ -81,6 +81,7 @@ Entry points: custom_components/rover/
 | phase_complete | 5 | 5 | 0 | 56908ms |
 | build_check | 4 | 4 | 0 | 93ms |
 | lint | 4 | 4 | 0 | 549ms |
+| knowledge_query | 4 | 4 | 0 | 5ms |
 | imports | 4 | 4 | 0 | 2ms |
 | set_qa_gates | 3 | 3 | 0 | 47ms |
 | get_qa_gate_profile | 3 | 3 | 0 | 15ms |
@@ -95,7 +96,6 @@ Entry points: custom_components/rover/
 | invalid | 2 | 2 | 0 | 8ms |
 | diff_summary | 1 | 1 | 0 | 89ms |
 | question | 1 | 1 | 0 | 8181ms |
-| knowledge_query | 1 | 1 | 0 | 10ms |
 | symbols | 1 | 1 | 0 | 11ms |
 | batch_symbols | 1 | 1 | 0 | 18ms |
 | checkpoint | 1 | 1 | 0 | 9ms |

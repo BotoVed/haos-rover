@@ -25,12 +25,9 @@
       },
       "general": {
         "title": "General Settings",
-        "description": "Configure server settings, ping interval, and network.",
+        "description": "Configure server settings and USB device.",
         "data": {
           "server_name": "Server Name",
-          "ping_interval": "Ping Interval (seconds)",
-          "local_ip": "Local IP Address",
-          "ssid": "WiFi SSID",
           "usb_device": "USB Device"
         }
       },

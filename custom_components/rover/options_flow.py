@@ -121,20 +121,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                         default=current.get("server_name", "Rover Hub"),
                     ): TextSelector(),
                     vol.Optional(
-                        "ping_interval",
-                        default=current.get(
-                            "ping_interval", PONG_BROADCAST_INTERVAL_S
-                        ),
-                    ): NumberSelector(
-                        NumberSelectorConfig(min=1, max=60, step=1)
-                    ),
-                    vol.Optional(
-                        "local_ip", default=current.get("local_ip", "")
-                    ): TextSelector(),
-                    vol.Optional(
-                        "ssid", default=current.get("ssid", "")
-                    ): TextSelector(),
-                    vol.Optional(
                         "usb_device",
                         default=default_usb,
                     ): SelectSelector(
