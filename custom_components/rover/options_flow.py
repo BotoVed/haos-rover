@@ -8,7 +8,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import serial.tools.list_ports
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -37,11 +36,16 @@ _LOGGER = logging.getLogger(__name__)
 
 def _detect_usb_devices() -> list[dict[str, str]]:
     """Detect connected USB serial devices (RNode candidates)."""
+    try:
+        import serial.tools.list_ports  # noqa: PLC0415
+    except ImportError:
+        _LOGGER.warning("pyserial not installed — USB device detection unavailable")
+        return []
+
     devices = []
     try:
         ports = serial.tools.list_ports.comports()
         for port in ports:
-            # Filter for likely RNode devices
             desc = (port.description or "").lower()
             if any(keyword in desc for keyword in ["usb serial", "rnode", "cp210", "ch340", "ftdi", "usb-to-serial"]):
                 devices.append({

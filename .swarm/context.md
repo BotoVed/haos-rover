@@ -49,25 +49,25 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1439 | 1439 | 0 | 361ms |
-| bash | 1288 | 1288 | 0 | 2160ms |
+| read | 1441 | 1441 | 0 | 361ms |
+| bash | 1291 | 1291 | 0 | 2157ms |
 | edit | 420 | 420 | 0 | 29ms |
 | grep | 283 | 283 | 0 | 77ms |
 | glob | 221 | 221 | 0 | 622ms |
 | task | 180 | 180 | 0 | 86464ms |
-| declare_scope | 81 | 81 | 0 | 4ms |
+| declare_scope | 83 | 83 | 0 | 4ms |
 | write | 73 | 73 | 0 | 21ms |
+| webfetch | 59 | 59 | 0 | 3211ms |
 | update_task_status | 58 | 58 | 0 | 22ms |
 | syntax_check | 55 | 55 | 0 | 54ms |
 | search | 41 | 41 | 0 | 28ms |
-| test_runner | 39 | 39 | 0 | 1469ms |
+| test_runner | 40 | 40 | 0 | 1455ms |
 | retrieve_summary | 35 | 35 | 0 | 8ms |
-| webfetch | 29 | 29 | 0 | 734ms |
 | summarize_work | 27 | 27 | 0 | 44ms |
 | diff | 21 | 21 | 0 | 75ms |
 | todo_extract | 20 | 20 | 0 | 4ms |
+| web_search | 17 | 17 | 0 | 7ms |
 | skill | 15 | 15 | 0 | 79ms |
-| web_search | 15 | 15 | 0 | 7ms |
 | pre_check_batch | 14 | 14 | 0 | 583ms |
 | swarm_command | 13 | 13 | 0 | 38ms |
 | knowledge_add | 13 | 13 | 0 | 147ms |
