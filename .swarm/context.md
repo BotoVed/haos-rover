@@ -49,15 +49,15 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1581 | 1581 | 0 | 337ms |
-| bash | 1350 | 1350 | 0 | 2383ms |
-| edit | 479 | 479 | 0 | 29ms |
+| read | 1587 | 1587 | 0 | 336ms |
+| bash | 1355 | 1355 | 0 | 2376ms |
+| edit | 482 | 482 | 0 | 29ms |
 | grep | 331 | 331 | 0 | 108ms |
 | glob | 227 | 227 | 0 | 606ms |
-| task | 213 | 213 | 0 | 83566ms |
-| declare_scope | 95 | 95 | 0 | 5ms |
+| task | 215 | 215 | 0 | 83003ms |
+| declare_scope | 97 | 97 | 0 | 5ms |
 | webfetch | 92 | 92 | 0 | 2472ms |
-| write | 73 | 73 | 0 | 21ms |
+| write | 75 | 75 | 0 | 21ms |
 | update_task_status | 63 | 63 | 0 | 21ms |
 | syntax_check | 56 | 56 | 0 | 54ms |
 | search | 46 | 46 | 0 | 25ms |
