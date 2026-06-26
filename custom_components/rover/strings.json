@@ -69,9 +69,9 @@
           "user_hash": "User"
         }
       },
-      "config": {
-        "title": "RC connecting",
-        "description": "Scan QR code to register a new remote:\n\n{qr}\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`"
+        "config": {
+          "title": "RC connecting",
+          "description": "Scan QR code to register a new remote:\n\n![QR]({qr_url})\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`"
       }
     },
     "abort": {

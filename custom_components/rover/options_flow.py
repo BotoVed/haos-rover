@@ -413,7 +413,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             step_id="config",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "qr": f"![QR]({qr_url})" if qr_url else "_(QR generation failed)_",
+                "qr_url": qr_url if qr_url else "_(QR generation failed)_",
                 "identity": runtime.identity_hash or "unknown",
                 "payload": qr_json,
                 "server_name": server_name,
