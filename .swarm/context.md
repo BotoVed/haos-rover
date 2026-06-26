@@ -49,32 +49,32 @@ Entry points: custom_components/rover/
 
 | Tool | Calls | Success | Failed | Avg Duration |
 |------|-------|---------|--------|--------------|
-| read | 1499 | 1499 | 0 | 352ms |
-| bash | 1307 | 1307 | 0 | 2388ms |
-| edit | 448 | 448 | 0 | 29ms |
-| grep | 304 | 304 | 0 | 74ms |
+| read | 1541 | 1541 | 0 | 343ms |
+| bash | 1326 | 1326 | 0 | 2360ms |
+| edit | 461 | 461 | 0 | 29ms |
+| grep | 317 | 317 | 0 | 72ms |
 | glob | 225 | 225 | 0 | 611ms |
-| task | 195 | 195 | 0 | 82008ms |
-| declare_scope | 88 | 88 | 0 | 4ms |
+| task | 200 | 200 | 0 | 84109ms |
+| declare_scope | 90 | 90 | 0 | 4ms |
+| webfetch | 88 | 88 | 0 | 2568ms |
 | write | 73 | 73 | 0 | 21ms |
 | update_task_status | 63 | 63 | 0 | 21ms |
-| webfetch | 59 | 59 | 0 | 3211ms |
-| syntax_check | 55 | 55 | 0 | 54ms |
+| syntax_check | 56 | 56 | 0 | 54ms |
+| retrieve_summary | 44 | 44 | 0 | 8ms |
 | search | 44 | 44 | 0 | 26ms |
 | test_runner | 42 | 42 | 0 | 1437ms |
-| retrieve_summary | 35 | 35 | 0 | 8ms |
 | summarize_work | 27 | 27 | 0 | 44ms |
-| diff | 25 | 25 | 0 | 86ms |
+| diff | 26 | 26 | 0 | 85ms |
 | todo_extract | 23 | 23 | 0 | 4ms |
-| pre_check_batch | 19 | 19 | 0 | 587ms |
+| pre_check_batch | 21 | 21 | 0 | 573ms |
 | web_search | 17 | 17 | 0 | 7ms |
 | skill | 15 | 15 | 0 | 79ms |
 | knowledge_add | 15 | 15 | 0 | 135ms |
 | write_retro | 14 | 14 | 0 | 62ms |
 | swarm_command | 13 | 13 | 0 | 38ms |
 | save_plan | 12 | 12 | 0 | 94ms |
+| gitingest | 12 | 12 | 0 | 76959ms |
 | placeholder_scan | 11 | 11 | 0 | 54ms |
-| gitingest | 11 | 11 | 0 | 81168ms |
 | todowrite | 11 | 11 | 0 | 7ms |
 | check_gate_status | 8 | 8 | 0 | 37ms |
 | get_approved_plan | 6 | 6 | 0 | 4ms |
@@ -86,6 +86,7 @@ Entry points: custom_components/rover/
 | set_qa_gates | 3 | 3 | 0 | 47ms |
 | get_qa_gate_profile | 3 | 3 | 0 | 15ms |
 | write_drift_evidence | 3 | 3 | 0 | 13ms |
+| web_fetch | 3 | 3 | 0 | 8ms |
 | sast_scan | 2 | 2 | 0 | 79ms |
 | secretscan | 2 | 2 | 0 | 28ms |
 | suggest_patch | 2 | 2 | 0 | 3ms |

@@ -1,12 +1,10 @@
 """Options flow for Rover integration."""
 from __future__ import annotations
 
-import base64
 import io
 import json
 import logging
 import os
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -57,12 +55,6 @@ def _detect_usb_devices() -> list[dict[str, str]]:
     except Exception as err:
         _LOGGER.warning("USB device detection failed: %s", err)
     return devices
-
-
-def _build_qr_image_url(payload: str, size: int = 300) -> str:
-    """Build a QR code image URL using the qrserver.com API."""
-    encoded = urllib.parse.quote(payload)
-    return f"https://api.qrserver.com/v1/create-qr-code/?size={size}x{size}&data={encoded}"
 
 
 def _generate_qr_png(data: str) -> bytes:
@@ -376,7 +368,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         local_ip = meta.get("local_ip", "")
         tcp_endpoint = f"{local_ip}:{tcp_port}" if local_ip else ""
 
-        qr_data = {
+        qr_dict = {
             "rvr": {
                 "fmt": QR_FORMAT_VERSION,
                 "dst": runtime.identity_hash or "",
@@ -386,26 +378,22 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 "uid": qr_token,
             }
         }
-        qr_json = json.dumps(qr_data, separators=(",", ":"))
+        qr_json = json.dumps(qr_dict, separators=(",", ":"))
 
-        # Generate QR PNG and embed as base64 data URI (bypasses CSP)
-        qr_url = ""
+        # Generate QR data payload for native <ha-qr-code> component
+        qr_payload = qr_json.replace('"', "&quot;")  # HTML-escaped for <ha-qr-code data="...">
+        
+        # Also save local PNG as fallback (accessible at /local/rover_qr.png)
         try:
             qr_png = _generate_qr_png(qr_json)
-            qr_b64 = base64.b64encode(qr_png).decode()
-            qr_url = f"data:image/png;base64,{qr_b64}"
-            
-            # Also save to www/ for direct access
             www_dir = self.hass.config.path("www")
             qr_path = Path(www_dir) / "rover_qr.png"
-
             def _save_qr() -> None:
                 os.makedirs(www_dir, exist_ok=True)
                 qr_path.write_bytes(qr_png)
-
             await self.hass.async_add_executor_job(_save_qr)
         except Exception as err:
-            _LOGGER.warning("Failed to generate QR: %s", err)
+            _LOGGER.warning("Failed to save QR locally: %s", err)
 
         hashes = runtime.registry.get_hashes()
 
@@ -413,7 +401,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             step_id="config",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "qr_url": qr_url if qr_url else "_(QR generation failed)_",
+                "qr_data": qr_payload,
                 "identity": runtime.identity_hash or "unknown",
                 "payload": qr_json,
                 "server_name": server_name,
