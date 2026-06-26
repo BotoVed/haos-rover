@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,12 @@ def _detect_usb_devices() -> list[dict[str, str]]:
     except Exception as err:
         _LOGGER.warning("USB device detection failed: %s", err)
     return devices
+
+
+def _build_qr_image_url(payload: str, size: int = 300) -> str:
+    """Build a QR code image URL using the qrserver.com API."""
+    encoded = urllib.parse.quote(payload)
+    return f"https://api.qrserver.com/v1/create-qr-code/?size={size}x{size}&data={encoded}"
 
 
 def _generate_qr_png(data: str) -> bytes:
@@ -380,7 +387,10 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         }
         qr_json = json.dumps(qr_data, separators=(",", ":"))
 
-        # Generate QR PNG locally and save to www/ for HA static serving
+        # Build external QR image URL (renders in description if markdown supported)
+        qr_url = _build_qr_image_url(qr_json)
+        
+        # Also save locally as fallback (accessible at /local/rover_qr.png)
         try:
             qr_png = _generate_qr_png(qr_json)
             www_dir = self.hass.config.path("www")
@@ -391,18 +401,14 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 qr_path.write_bytes(qr_png)
 
             await self.hass.async_add_executor_job(_save_qr)
-            qr_url = "/local/rover_qr.png"
         except Exception as err:
-            _LOGGER.warning("Failed to generate QR locally: %s", err)
-            qr_url = ""
+            _LOGGER.warning("Failed to save QR locally: %s", err)
 
         hashes = runtime.registry.get_hashes()
 
         return self.async_show_form(
             step_id="config",
-            data_schema=vol.Schema({
-                vol.Optional("qr_url", default=qr_url): TextSelector(),
-            }),
+            data_schema=vol.Schema({}),
             description_placeholders={
                 "qr": f"![QR]({qr_url})" if qr_url else "_(QR generation failed)_",
                 "identity": runtime.identity_hash or "unknown",
