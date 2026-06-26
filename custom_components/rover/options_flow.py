@@ -105,20 +105,27 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_add_devices(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Auto-redirect to device picker."""
-        return await self.async_step_device_picker()
+        """Manage device registration via entity picker with diff save."""
+        return await self.async_step_device_picker(user_input)
 
     async def async_step_device_picker(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Pick entities to add as Rover devices."""
+        """Manage device registration via entity picker with diff save."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         if runtime is None or runtime.registry is None:
             return self.async_abort(reason="not_loaded")
 
+        registry = runtime.registry
+        existing_devices = registry.all_devices()
+        existing_entity_ids = [d["entity_id"] for d in existing_devices]
+
         if user_input is not None:
-            entity_ids = user_input.get("entities", [])
-            for entity_id in entity_ids:
+            new_entity_ids = set(user_input.get("entities", []))
+            old_entity_ids = set(existing_entity_ids)
+
+            # Add new devices
+            for entity_id in new_entity_ids - old_entity_ids:
                 domain = entity_id.split(".")[0]
                 type_code = DOMAIN_TO_TYPE.get(domain)
                 if type_code is None:
@@ -130,32 +137,36 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 try:
                     state = self.hass.states.get(entity_id)
                     name = (
-                        state.attributes.get("friendly_name", entity_id.split(".")[-1])
-                        if state else entity_id.split(".")[-1]
+                        state.attributes.get(
+                            "friendly_name", entity_id.split(".")[-1]
+                        )
+                        if state
+                        else entity_id.split(".")[-1]
                     )
-                    await runtime.registry.add_device(
+                    await registry.add_device(
                         entity_id, name, type_code, area_id=None
                     )
                 except ValueError as err:
                     _LOGGER.warning("Device add skipped %s: %s", entity_id, err)
+
+            # Remove devices that were unchecked
+            for entity_id in old_entity_ids - new_entity_ids:
+                for d in existing_devices:
+                    if d["entity_id"] == entity_id:
+                        await registry.remove_device(d["short_id"])
+                        _LOGGER.info("Device removed: %s", entity_id)
+                        break
+
             return await self.async_step_init()
 
-        registry = runtime.registry
-        existing = registry.all_devices()
-        if existing:
-            lines = [f"  #{d['short_id']} {d['name']} [{d['type']}] {d['entity_id']}" for d in existing]
-            existing_text = "Already registered devices:\n" + "\n".join(lines)
-        else:
-            existing_text = "No devices registered yet."
-
+        # Pre-fill entities with currently registered devices
         return self.async_show_form(
             step_id="device_picker",
             data_schema=vol.Schema(
                 {
-                    vol.Optional("existing_devices", default=existing_text): TextSelector(
-                        TextSelectorConfig(multiline=True),
-                    ),
-                    vol.Required("entities"): EntitySelector(
+                    vol.Optional(
+                        "entities", default=existing_entity_ids
+                    ): EntitySelector(
                         EntitySelectorConfig(multiple=True)
                     ),
                 }

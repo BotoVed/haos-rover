@@ -36,17 +36,14 @@
         }
       },
       "add_devices": {
-        "title": "Add Devices",
-        "data": {
-          "proceed": "Continue to add devices"
-        }
+        "title": "Manage device registration"
       },
       "device_picker": {
-        "title": "Pick Devices",
+        "title": "Manage device registration",
         "data": {
-          "existing_devices": "Currently registered",
-          "entities": "Entities to add"
-        }
+          "entities": "Entities"
+        },
+        "submit": "сохранить изменения"
       },
       "remove_device": {
         "title": "Remove Device",
