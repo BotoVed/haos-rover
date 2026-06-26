@@ -25,6 +25,7 @@ from .const import (
     PONG_BROADCAST_INTERVAL_S,
     QR_FORMAT_VERSION,
     TYPE_DEFS,
+    DOMAIN_TO_TYPE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,7 +38,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
         """Initialize options flow."""
         super().__init__(config_entry)
         self._short_id: int | None = None
-        self._pending_hash: str | None = None
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -49,22 +49,20 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
         return self.async_show_menu(
             step_id="init",
-            menu_options=[
-                "general",
-                "network",
-                "devices",
-                "remove_device",
-                "test_device",
-                "users",
-                "pending",
-                "config",
-            ],
+            menu_options={
+                "general": "General Settings",
+                "add_devices": "Add Devices",
+                "remove_device": "Remove Device",
+                "test_device": "Test Device",
+                "users": "Manage Users",
+                "config": "Configuration Export",
+            },
         )
 
     async def async_step_general(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """General settings: server name, ping interval."""
+        """General settings: server name, ping interval, network."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
@@ -85,22 +83,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     ): NumberSelector(
                         NumberSelectorConfig(min=1, max=60, step=1)
                     ),
-                }
-            ),
-        )
-
-    async def async_step_network(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Network settings: TCP port, IP, SSID."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
-        current = self.options
-        return self.async_show_form(
-            step_id="network",
-            data_schema=vol.Schema(
-                {
                     vol.Optional(
                         "tcp_port",
                         default=current.get("tcp_port", DEFAULT_TCP_PORT),
@@ -117,7 +99,9 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             ),
         )
 
-    async def async_step_devices(
+    
+
+    async def async_step_add_devices(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Add devices via entity picker."""
@@ -127,41 +111,40 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
         if user_input is not None:
             entity_ids = user_input.get("entities", [])
-            type_str = user_input.get("type", "")
-            type_code = type_str.split(" — ")[0].strip() if " — " in type_str else type_str
-            area_id = user_input.get("area_id")
 
             for entity_id in entity_ids:
+                domain = entity_id.split(".")[0]
+                type_code = DOMAIN_TO_TYPE.get(domain)
+                if type_code is None:
+                    _LOGGER.warning(
+                        "Device add skipped %s: unknown domain '%s'",
+                        entity_id, domain,
+                    )
+                    continue
                 try:
-                    name = user_input.get("name", entity_id.split(".")[-1])
+                    # Auto-detect name from HA entity state friendly_name
+                    state = self.hass.states.get(entity_id)
+                    name = (
+                        state.attributes.get("friendly_name", entity_id.split(".")[-1])
+                        if state else entity_id.split(".")[-1]
+                    )
                     await runtime.registry.add_device(
-                        entity_id, name, type_code, area_id
+                        entity_id, name, type_code, area_id=None
                     )
                 except ValueError as err:
                     _LOGGER.warning("Device add skipped %s: %s", entity_id, err)
             return await self.async_step_init()
 
-        # Build device type options for selector
-        type_options = [
-            f"{k} — {v['name']} ({v['domain']})" for k, v in TYPE_DEFS.items()
-        ]
+        existing = runtime.registry.all_devices()
+        existing_text = f"Already registered: {len(existing)} devices" if existing else "No devices yet"
 
         return self.async_show_form(
-            step_id="devices",
+            step_id="add_devices",
+            description_placeholders={"count": str(len(existing))},
             data_schema=vol.Schema(
                 {
                     vol.Required("entities"): EntitySelector(
                         EntitySelectorConfig(multiple=True)
-                    ),
-                    vol.Required("type"): SelectSelector(
-                        SelectSelectorConfig(
-                            options=type_options,
-                            mode=SelectSelectorMode.LIST,
-                        )
-                    ),
-                    vol.Optional("name"): TextSelector(),
-                    vol.Optional("area_id"): NumberSelector(
-                        NumberSelectorConfig(min=0, max=65535, step=1)
                     ),
                 }
             ),
@@ -303,48 +286,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     vol.Required("user_hash"): SelectSelector(
                         SelectSelectorConfig(
                             options=user_options, mode=SelectSelectorMode.LIST
-                        )
-                    ),
-                }
-            ),
-        )
-
-    async def async_step_pending(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Approve pending remotes."""
-        runtime = getattr(self.config_entry, "runtime_data", None)
-        if runtime is None or runtime.registry is None:
-            return self.async_abort(reason="not_loaded")
-
-        if user_input is not None:
-            hash_val = user_input.get("pending_hash", "")
-            if hash_val:
-                key = hash_val.split(" — ")[0].strip()
-                if user_input.get("action") == "approve":
-                    await runtime.registry.approve_pending(key)
-                else:
-                    await runtime.registry.deny_pending(key)
-            return await self.async_step_init()
-
-        pending = runtime.registry.all_pending()
-        if not pending:
-            return self.async_abort(reason="no_pending")
-
-        pending_options = [f"{p['hash']} — {p['name']}" for p in pending]
-        return self.async_show_form(
-            step_id="pending",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("pending_hash"): SelectSelector(
-                        SelectSelectorConfig(
-                            options=pending_options, mode=SelectSelectorMode.LIST
-                        )
-                    ),
-                    vol.Required("action", default="approve"): SelectSelector(
-                        SelectSelectorConfig(
-                            options=["approve", "revoke"],
-                            mode=SelectSelectorMode.LIST,
                         )
                     ),
                 }

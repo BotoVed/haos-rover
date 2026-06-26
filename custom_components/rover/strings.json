@@ -15,43 +15,31 @@
       "init": {
         "title": "Rover Configuration",
         "description": "Select a configuration section:",
-        "menu": {
+        "menu_options": {
           "general": "General Settings",
-          "network": "Network Configuration",
-          "devices": "Add Devices",
+          "add_devices": "Add Devices",
           "remove_device": "Remove Device",
           "test_device": "Test Device",
           "users": "Manage Users",
-          "pending": "Pending Remotes",
           "config": "Configuration Export"
         }
       },
       "general": {
         "title": "General Settings",
-        "description": "Configure server name and ping interval.",
+        "description": "Configure server settings, ping interval, and network.",
         "data": {
           "server_name": "Server Name",
-          "ping_interval": "Ping Interval (seconds)"
-        }
-      },
-      "network": {
-        "title": "Network Configuration",
-        "description": "Configure Reticulum network settings.",
-        "data": {
+          "ping_interval": "Ping Interval (seconds)",
           "tcp_port": "TCP Port",
           "local_ip": "Local IP Address",
           "ssid": "WiFi SSID"
         }
       },
-      "devices": {
+      "add_devices": {
         "title": "Add Devices",
-        "description": "Select entities to add as Rover devices.",
+        "description": "Registered devices: {count}",
         "data": {
-          "entities": "Entities",
-          "type": "Device Type",
-          "name": "Display Name",
-          "area_id": "Area ID"
-        }
+        "entities": "Entities"
       },
       "remove_device": {
         "title": "Remove Device",
@@ -81,14 +69,6 @@
           "user_hash": "User"
         }
       },
-      "pending": {
-        "title": "Pending Remotes",
-        "description": "Approve or reject pending registration requests.",
-        "data": {
-          "pending_hash": "Remote",
-          "action": "Action"
-        }
-      },
       "config": {
         "title": "Configuration Export",
         "description": "Scan QR code to register a new remote:\n\n{qr}\n\n**Server Name:** `{server_name}`\n**Identity:** `{identity}`\n**TCP Endpoint:** `{tcp}`\n**Public Key:** `{pk}`\n**One-time UID:** `{uid}`\n\n**Payload:** `{payload}`\n\n**Section Hashes:**\n- Meta: `{hash_m}`\n- Users: `{hash_u}`\n- Areas: `{hash_a}`\n- Devices: `{hash_d}`"
@@ -97,8 +77,7 @@
     "abort": {
       "not_loaded": "Integration not fully loaded. Try again shortly.",
       "no_devices": "No devices registered yet.",
-      "no_users": "No users registered yet.",
-      "no_pending": "No pending registration requests."
+      "no_users": "No users registered yet."
     }
   }
 }

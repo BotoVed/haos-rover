@@ -28,3 +28,8 @@ class RoverConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         return self.async_create_entry(title="Rover", data={})
+
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        from .options_flow import RoverOptionsFlow
+        return RoverOptionsFlow(config_entry)
