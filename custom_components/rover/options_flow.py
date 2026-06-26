@@ -98,8 +98,15 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
         current = self.options
         usb_devices = await self.hass.async_add_executor_job(_detect_usb_devices)
-        usb_options = [d["value"] for d in usb_devices] if usb_devices else ["none"]
-        usb_labels = {d["value"]: d["label"] for d in usb_devices} if usb_devices else {"none": "No USB devices found"}
+        if usb_devices:
+            usb_selector_options = [
+                {"value": d["value"], "label": d["label"]}
+                for d in usb_devices
+            ]
+            default_usb = current.get("usb_device", usb_devices[0]["value"])
+        else:
+            usb_selector_options = [{"value": "none", "label": "No USB devices found"}]
+            default_usb = "none"
 
         return self.async_show_form(
             step_id="general",
@@ -125,11 +132,10 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     ): TextSelector(),
                     vol.Optional(
                         "usb_device",
-                        default=current.get("usb_device", usb_options[0] if usb_options else "none"),
+                        default=default_usb,
                     ): SelectSelector(
                         SelectSelectorConfig(
-                            options=usb_options,
-                            labels=usb_labels,
+                            options=usb_selector_options,
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     ),
