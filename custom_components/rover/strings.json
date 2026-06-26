@@ -37,9 +37,16 @@
       },
       "add_devices": {
         "title": "Add Devices",
-        "description": "Registered devices: {count}",
         "data": {
-        "entities": "Entities"
+          "proceed": "Continue to add devices"
+        }
+      },
+      "device_picker": {
+        "title": "Pick Devices",
+        "data": {
+          "existing_devices": "Currently registered",
+          "entities": "Entities to add"
+        }
       },
       "remove_device": {
         "title": "Remove Device",

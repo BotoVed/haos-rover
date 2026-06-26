@@ -18,6 +18,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
     TextSelector,
+    TextSelectorConfig,
 )
 
 from .const import (
@@ -104,14 +105,19 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_add_devices(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Add devices via entity picker."""
+        """Auto-redirect to device picker."""
+        return await self.async_step_device_picker()
+
+    async def async_step_device_picker(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Pick entities to add as Rover devices."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         if runtime is None or runtime.registry is None:
             return self.async_abort(reason="not_loaded")
 
         if user_input is not None:
             entity_ids = user_input.get("entities", [])
-
             for entity_id in entity_ids:
                 domain = entity_id.split(".")[0]
                 type_code = DOMAIN_TO_TYPE.get(domain)
@@ -122,7 +128,6 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     )
                     continue
                 try:
-                    # Auto-detect name from HA entity state friendly_name
                     state = self.hass.states.get(entity_id)
                     name = (
                         state.attributes.get("friendly_name", entity_id.split(".")[-1])
@@ -135,14 +140,21 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                     _LOGGER.warning("Device add skipped %s: %s", entity_id, err)
             return await self.async_step_init()
 
-        existing = runtime.registry.all_devices()
-        existing_text = f"Already registered: {len(existing)} devices" if existing else "No devices yet"
+        registry = runtime.registry
+        existing = registry.all_devices()
+        if existing:
+            lines = [f"  #{d['short_id']} {d['name']} [{d['type']}] {d['entity_id']}" for d in existing]
+            existing_text = "Already registered devices:\n" + "\n".join(lines)
+        else:
+            existing_text = "No devices registered yet."
 
         return self.async_show_form(
-            step_id="add_devices",
-            description_placeholders={"count": str(len(existing))},
+            step_id="device_picker",
             data_schema=vol.Schema(
                 {
+                    vol.Optional("existing_devices", default=existing_text): TextSelector(
+                        TextSelectorConfig(multiline=True),
+                    ),
                     vol.Required("entities"): EntitySelector(
                         EntitySelectorConfig(multiple=True)
                     ),
