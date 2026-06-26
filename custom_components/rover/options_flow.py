@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+import serial.tools.list_ports
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -32,6 +33,24 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _detect_usb_devices() -> list[dict[str, str]]:
+    """Detect connected USB serial devices (RNode candidates)."""
+    devices = []
+    try:
+        ports = serial.tools.list_ports.comports()
+        for port in ports:
+            # Filter for likely RNode devices
+            desc = (port.description or "").lower()
+            if any(keyword in desc for keyword in ["usb serial", "rnode", "cp210", "ch340", "ftdi", "usb-to-serial"]):
+                devices.append({
+                    "value": port.device,
+                    "label": f"{port.device} — {port.description}",
+                })
+    except Exception as err:
+        _LOGGER.warning("USB device detection failed: %s", err)
+    return devices
 
 
 def _generate_qr_png(data: str) -> bytes:
@@ -66,7 +85,7 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                 "add_devices": "Manage Device",
                 "test_device": "Test Device",
                 "users": "Manage Users",
-                "config": "Configuration Export",
+                "config": "RC connecting",
             },
         )
 
@@ -78,6 +97,10 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
             return self.async_create_entry(title="", data=user_input)
 
         current = self.options
+        usb_devices = await self.hass.async_add_executor_job(_detect_usb_devices)
+        usb_options = [d["value"] for d in usb_devices] if usb_devices else ["none"]
+        usb_labels = {d["value"]: d["label"] for d in usb_devices} if usb_devices else {"none": "No USB devices found"}
+
         return self.async_show_form(
             step_id="general",
             data_schema=vol.Schema(
@@ -95,17 +118,21 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
                         NumberSelectorConfig(min=1, max=60, step=1)
                     ),
                     vol.Optional(
-                        "tcp_port",
-                        default=current.get("tcp_port", DEFAULT_TCP_PORT),
-                    ): NumberSelector(
-                        NumberSelectorConfig(min=1024, max=65535, step=1)
-                    ),
-                    vol.Optional(
                         "local_ip", default=current.get("local_ip", "")
                     ): TextSelector(),
                     vol.Optional(
                         "ssid", default=current.get("ssid", "")
                     ): TextSelector(),
+                    vol.Optional(
+                        "usb_device",
+                        default=current.get("usb_device", usb_options[0] if usb_options else "none"),
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=usb_options,
+                            labels=usb_labels,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
                 }
             ),
         )
@@ -377,7 +404,9 @@ class RoverOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
 
         return self.async_show_form(
             step_id="config",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema({
+                vol.Optional("qr_url", default=qr_url): TextSelector(),
+            }),
             description_placeholders={
                 "qr": f"![QR]({qr_url})" if qr_url else "_(QR generation failed)_",
                 "identity": runtime.identity_hash or "unknown",

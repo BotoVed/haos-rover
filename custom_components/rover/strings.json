@@ -29,9 +29,9 @@
         "data": {
           "server_name": "Server Name",
           "ping_interval": "Ping Interval (seconds)",
-          "tcp_port": "TCP Port",
           "local_ip": "Local IP Address",
-          "ssid": "WiFi SSID"
+          "ssid": "WiFi SSID",
+          "usb_device": "USB Device"
         }
       },
       "add_devices": {
